@@ -201,6 +201,9 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                 password: formData.password,
             });
 
+            // Aggiorna la lista locale per evitare che l'effect forzi view="create"
+            setLocalUsers(prev => [...prev, newUser]);
+
             // Seleziona automaticamente il nuovo profilo
             librepm.setCurrentUser(newUser.id);
 
@@ -700,18 +703,23 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
 
             {/* Stili inline per questa pagina */}
             <style>{`
+                html, body, #root {
+                    overflow: auto !important;
+                    height: auto !important;
+                }
+
                 .onboarding-page {
                     min-height: 100vh;
                     display: flex;
-                    align-items: center;
+                    align-items: flex-start;
                     justify-content: center;
                     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                     padding: 20px;
                     position: relative;
-                    z-index: 1; /* Base z-index */
+                    z-index: 1;
                     overflow-y: auto;
                 }
-                
+
                 .onboarding-container {
                     background: white;
                     border-radius: 16px;
@@ -720,7 +728,7 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                     width: 100%;
                     box-shadow: 0 20px 60px rgba(0,0,0,0.3);
                     position: relative;
-                    z-index: 2; /* Container sopra il background */
+                    z-index: 2;
                     margin: auto 0;
                 }
                 
