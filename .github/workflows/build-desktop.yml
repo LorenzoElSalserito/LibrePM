@@ -73,7 +73,7 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./desktop
-        run: npm install
+        run: npm install --no-frozen-lockfile
 
       - name: Build & Package Electron App
         working-directory: ./desktop
