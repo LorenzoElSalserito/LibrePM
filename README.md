@@ -1,149 +1,167 @@
 # LibrePM
 
-LibrePM is a comprehensive productivity and project management suite designed to bridge the gap between personal task management and small team collaboration. Built with a "Local-First" philosophy, it provides a robust desktop experience powered by a reusable Java Spring Boot backend, designed to be scalable for future cloud synchronization and multi-platform support (Web/Mobile).
+**LibrePM** is a European project governance platform for project finance, grant management and operational planning — privacy-first, local-first, EU-oriented.
 
-## Project Overview
+It enables individuals, teams, nonprofits, SMEs, professional studios, public-sector-adjacent organizations and research consortia to plan, finance, monitor, document and govern projects and programmes without relying on invasive telemetry or cloud lock-in.
 
-LibrePM aims to provide a consistent user experience across platforms, acting as a central hub for:
-- Core Work & Project Management
-- Contextual Notes & Knowledge Base
-- Time Tracking, Estimates & Productivity Analytics
-- Advanced Planning (WBS, Dependencies, Calendars)
-- Resource Planning & Allocation
-- Executive Dashboard, Tracking & Charter
-- Project Templates & Guided Setup
-- Local-First Data Platform & Semantic Sync
+## Positioning
 
-The architecture separates the frontend (Electron + React) from the backend (Java + Spring Boot), allowing the backend to serve as a headless API that can run embedded locally or hosted on a remote server.
+| Axis | Summary |
+|---|---|
+| Identity | European project management and project governance platform, local-first |
+| Value proposition | Govern work, plan, finance, grants, stakeholders and evolutives in the same domain |
+| Competitive edge | Real privacy-first, data portability, local auditability, vertical templates, scenario branches |
+| Deliberate boundary | Not an ERP, not general-ledger accounting, not people surveillance, not general-purpose BI |
 
-## Key Features
+## Core Principles
 
-### Core Productivity & Work Management
-- **Advanced Task Management:** Support for priorities, deadlines, status workflows, tags, and rich Markdown notes.
-- **Task Dependencies:** Implementation of blocking relationships (FS, SS, FF, SF) with lead and lag.
-- **Checklists:** Granular sub-tasks within a main task to track specific steps.
-- **Views:** List, Kanban Board, Timeline, Gantt, and Workload views with shared selection contexts and cross-view experience.
+- **Zero telemetry by default** — no usage events, session analytics, heatmaps, session replay or fingerprinting
+- **Zero third-party tracking** — no SDKs, pixels, trackers or dependencies that collect non-essential telemetry
+- **Local data sovereignty** — the local workspace is the primary source of truth; cloud sync is optional and replaceable
+- **Progressive complexity** — a simple task stays simple; advanced planning, finance and grants activate progressively
+- **EU-ready by design** — privacy by design/default, accessibility, secure-by-design, portability, procurement readiness
+
+## Features
+
+### Core Work & Project Management
+- Task management with priorities, deadlines, status workflows, tags and rich Markdown notes
+- Task dependencies (FS, SS, FF, SF) with lead and lag
+- Checklists and subtasks
+- Views: List, Kanban Board, Timeline, Gantt, Workload, Calendar, Planner
 
 ### Advanced Planning & Execution Control
-- **WBS & Milestones:** Work Breakdown Structure numbering, summary tasks, and zero-duration milestones.
-- **Execution Control:** Baselines, variance tracking (schedule, effort), forecasting, and tracking of project progress.
-- **Work Calendars & Capacity Engine:** Definition of working hours, holidays, exceptions, and daily capacity rules at workspace, team, or user level.
-- **Resource Allocation:** Effort assignments, workload slicing, ghost users, and over-allocation alerts.
+- WBS, milestones, summary tasks
+- Baselines, variance tracking (schedule, effort), forecasting
+- Work calendars, holidays, exceptions and capacity engine
+- Resource allocation, workload slicing, ghost users, over-allocation alerts
+
+### Project Finance, Grants & Governance
+- Budget, cost lines, fund sources, commitments, burn rate, eligibility
+- Grant and call registry, candidature tracking, submission packages, reporting obligations
+- Donor registry, sponsor commitments, stakeholder governance
+- Change control, scenario branches, compare and selective merge
+- Evidence packs exportable for audit, sponsor review and grant reporting
 
 ### Executive Dashboard & Charter
-- **Chart Tab:** A synthetic view containing project charter, team roles, goals, and problem statement.
-- **Business Case & Key Success Metrics:** Track target vs. achieved metrics and business value.
-- **Risk & Deliverable Tracking:** Visual risk register, OKRs panel, and high-level phase timelines.
+- Project charter with team roles, goals and problem statement
+- Business case, key success metrics (target vs. achieved)
+- Risk register with severity/likelihood matrix and mitigation tracking
+- OKR tracking aligned with project goals
+- Deliverable tracking and high-level phase timelines
 
 ### Time Tracking & Analytics
-- **Focus Sessions:** Integrated timer for tracking actual work time against estimates, with heatmap visualization and session history.
-- **Analytics:** Calculation of estimation deviation (Estimated vs Actual minutes) to improve planning accuracy.
-- **OKR Tracking:** Objectives and Key Results alignment with project goals.
+- Focus sessions with integrated timer, heatmap visualization and session history
+- Estimation deviation analysis (estimated vs. actual) for planning accuracy
+- Ethical analytics derived from domain events, not from covert user behaviour
 
 ### Team & Collaboration
-- **Role-Based Access Control (RBAC):** Granular permissions at the project level (Owner, Admin, Editor, Viewer).
-- **Team Management:** Creation of teams and management of members, followers/watchers, and connections.
-- **Ghost Users:** Ability to create placeholder users for resource planning and assignment before they have a real account.
-- **Notifications:** System for tracking task assignments, status changes, and mentions.
+- Role-based access control (Owner, Admin, Editor, Viewer)
+- Team management with members, followers/watchers and connections
+- Ghost users for resource planning before account creation
+- Notification system for assignments, status changes and mentions
 
-### Technical & Architecture
-- **Local-First Database:** Uses SQLite for zero-configuration local storage, with support for external supported databases.
-- **Planning-Aware Semantic Sync:** 
-  - **Differentiated Merge Policies:** Treats text, sets, checklists, hierarchies, and graphs differently to avoid unresolvable conflicts.
-  - **Soft Delete & Conflict Review:** Entities are marked as deleted rather than removed, with manual conflict review support.
-- **Project Templates:** Template Gallery (e.g., Project Timeline, Gantt Project, Event Marketing Timeline) providing structural blueprints, default views, deliverables, and metrics.
-- **Integrations:** ICS calendar feed export/subscription, CSV import/export with column mapping, and transfer manifests.
-- **Database Backup/Restore:** Full `.db` export and import for data portability and backups.
-- **Risk Register:** Visual risk matrix with severity/likelihood scoring and mitigation tracking.
-- **Asset Management:** Abstracted file storage service for task, note, and project attachments (currently local filesystem).
+### Privacy & Compliance
+- Data map, retention policies, data subject rights (export, rectification, deletion, anonymization, portability)
+- Role-gated visibility for financial data, sensitive stakeholders, donor registry, decision log, audit trail
+- No dark patterns: symmetric opt-in/opt-out, clear controls, comprehensible preferences
+- Cloud and transfer guardrails when extra-EU sync or integrations are activated
 
-## Desktop Experience
-
-The Electron desktop app provides native-quality features beyond the web UI:
-
-- **Command Palette (Ctrl+K):** Quick navigation, task search, and rapid task/project creation from anywhere in the app.
-- **Focus Timer:** Integrated Pomodoro-style timer with heatmap visualization and full session tracking history.
-- **System Notifications:** Native OS notifications for task reminders, focus session events, and assignment alerts.
-- **Native File Dialogs:** System file picker for import/export operations (JSON, CSV, `.db` database files).
-- **Linux/Wayland Focus Management:** Robust keyboard input handling that recovers key focus after Alt+Tab, modal dismissals, and window manager focus cycles — critical for text-heavy workflows on Linux.
-- **Debug Logger:** Built-in development diagnostics panel for renderer-to-main process log inspection.
+### Desktop Experience (Electron)
+- Command Palette (Ctrl+K) for instant navigation and rapid creation
+- Focus Timer with Pomodoro-style tracking and heatmap
+- System notifications for reminders, focus events and assignment alerts
+- Native file dialogs for import/export (JSON, CSV, `.db`)
+- Linux/Wayland focus management for robust keyboard input recovery
+- Light and Dark themes, Italian and English localization
 
 ## Architecture
 
-### Electron Preload Bridge
-The renderer process communicates with the backend and native OS through the `window.librepm` API surface, exposed via Electron's `contextBridge`. All IPC calls are allowlisted and serialized safely.
+### Stack
 
-### Focus Management Subsystem
-The `LPMWindow` bridge (`lpm:force-focus`, `lpm:force-focus-sync`, `lpm:ensure-webcontent-focus`) provides synchronized focus recovery for Linux/Wayland environments where `webContents` can lose key focus independently of the window manager's focus state.
+| Layer | Technology |
+|---|---|
+| Backend | Java 21, Spring Boot 3, Hibernate / Spring Data JPA, SQLite (JDBC), Flyway, Gradle |
+| Frontend | Electron, React, Bootstrap / Custom CSS |
 
-### IPC Channel Conventions
-- `lpm:*` — Focus management (synchronous where needed for input event timing)
-- `backend:*` — Backend lifecycle and port discovery
-- `data:*` — Import/export with native dialogs
-- `window:*` — Window controls (minimize, maximize, close)
-- `app:*` — Application lifecycle events (focus, blur)
+### Design
 
-## Technology Stack
+The architecture separates the frontend (Electron + React) from the backend (Java + Spring Boot). The backend serves as a headless API that runs embedded locally or can be hosted on a remote server.
 
-### Backend
-- **Language:** Java 21
-- **Framework:** Spring Boot 3
-- **Persistence:** Hibernate / Spring Data JPA
-- **Database:** SQLite (via JDBC)
-- **Migrations:** Flyway
-- **Build Tool:** Gradle
+Data is stored in SQLite for zero-configuration local storage. The database schema is managed via Flyway migrations (`src/main/resources/db/migration`), ensuring schema consistency across versions.
 
-### Frontend (Desktop)
-- **Runtime:** Electron
-- **Framework:** React
-- **Styling:** Bootstrap / Custom CSS
+### Bounded Contexts
+
+| Context | Responsibility |
+|---|---|
+| Work Management | Tasks, checklists, status, tagging, inbox, base assignments |
+| Knowledge & Evidence | Notes, attachments, evidence, links, search, dossiers |
+| Planning & Capacity | WBS, dependencies, calendar, Gantt, capacity, forecast |
+| Execution Control | Baselines, variance, progress, risks, deliverable tracking |
+| Finance & Funding | Budget, cost lines, fund sources, commitments, burn rate, eligibility |
+| Grants & External Governance | Calls, candidatures, sponsors, donations, stakeholders, obligations |
+| Branches & Change Governance | Change requests, scenarios, branches, compare, merge, spin-off |
+| Privacy & Compliance | Data map, retention, DSR, access control, audit, consent boundaries |
+| Open Interoperability | Import/export, calendar feeds, attachments, open schemas, connectors |
+| Portfolio Light | Programmes, cross-project overview, funding and risk concentration |
+
+### Workspace Profiles
+
+| Profile | Primary Value |
+|---|---|
+| Personal / Independent | Tasks, notes, light planning, essential insights |
+| Team Operations | Collaboration, boards, timeline, workload, executive dashboard |
+| PM / PMO Light | Baselines, forecast, resource planning, branch compare, executive tracking |
+| Nonprofit & Donations | Earmarked funds, donor management, reporting and evidence |
+| Grant & Calls | Call registry, eligibility, submission packages, reporting obligations |
+| Agency / Consultancy | Capacity, budget per deliverable, external stakeholders, sponsors |
+| R&D Consortium | Partner organisations, work packages, deliverable register, co-funding, reviewer packs |
 
 ## Getting Started
 
 ### Prerequisites
 - Java Development Kit (JDK) 21 or higher
-- Node.js and npm (for the frontend)
+- Node.js and npm
 
 ### Running the Backend
-The backend is a standard Gradle project. You can run it directly from the root directory:
 
 ```bash
 ./gradlew bootRun
 ```
 
-By default, the application runs with the `desktop` profile, using a local SQLite database located in the user's home directory (or configured path).
+By default the application runs with the `desktop` profile, using a local SQLite database in the user's home directory.
 
-### Building the JAR
-To create a standalone executable JAR file:
+### Building the Desktop App
 
 ```bash
-./gradlew bootJar
+cd desktop
+npm install
+npm run dist
 ```
 
-The output file will be located in `build/libs/`.
+This builds the backend JAR, the frontend, and packages everything into a distributable AppImage/DMG.
+
+### Development Mode
+
+```bash
+# Terminal 1 — backend
+./gradlew bootRun
+
+# Terminal 2 — frontend + Electron
+cd desktop
+npm run dev
+```
 
 ## Configuration
 
-The application is configured via `application.yml`. Key configuration properties include:
+The application is configured via `application.yml`:
 
-- `librepm.data.path`: The root directory for database and asset storage.
-- `librepm.assets.allowed-extensions`: Whitelist of file types allowed for upload.
-- `spring.profiles.active`: Controls the execution mode (e.g., `desktop`, `web`, `production`).
-
-## Database Schema
-
-The database schema is managed via Flyway migrations located in `src/main/resources/db/migration`. This ensures that the local database schema is always consistent with the code version.
-
-Key tables and entities include:
-- `users`, `teams`, `memberships`: Identity and collaboration.
-- `projects`, `tasks`, `dependencies`: Core domain entities and planning.
-- `focus_sessions`: Time tracking logs.
-- `user_settings`, `work_calendars`: Configuration and capacity management.
-- `dashboard_widgets`, `metrics`, `deliverables`: Execution tracking and charter data.
+- `librepm.data.path` — root directory for database and asset storage
+- `librepm.assets.allowed-extensions` — whitelist of file types allowed for upload
+- `spring.profiles.active` — execution mode (`desktop`, `web`, `production`)
 
 ## License
 
-Copyright © Lorenzo De Marco 2026 (Lorenzo DM)
+Copyright (C) Lorenzo De Marco 2026 (Lorenzo DM)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 

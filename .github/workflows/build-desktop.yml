@@ -57,7 +57,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: backend-jar
-          path: desktop/backend-libs
+          path: build/libs
 
       # Generazione JRE Custom con jlink
       - name: Generate Custom JRE
@@ -73,13 +73,14 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./desktop
-        run: npm ci
+        run: npm install
 
       - name: Build & Package Electron App
         working-directory: ./desktop
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run dist
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npx vite build && npx electron-builder
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
