@@ -113,7 +113,7 @@ jobs:
             LibrePM-*-source.zip
             LibrePM-*-source.tar.gz
 
-  # Crea una GitHub Release quando si pusha un tag v*
+  # Crea una GitHub Release quando si pusha un tag *RELEASE
   release:
     if: endsWith(github.ref, 'RELEASE')
     needs: [build-desktop, source-archive]
