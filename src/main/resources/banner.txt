@@ -1,0 +1,12 @@
+      ___           _               ______  ___     ___
+      | |      (_) | |             |      \/   \   /   \
+      | |       _  | |_  _ __  ___ |  ! ) |     \ /     |
+      | |      | | | ' \| '_ |/ _ ||  |---|  |\     /|  |
+      | |____  | | | |_ | |   ||__||  |   |  | \   / |  |
+      |______| |_| |____|_|   \___/|__|   |__|  \_/  |__|
+
+
+
+  :: LibrePM Backend ::        (v0.1.0-SNAPSHOT)
+  :: Java ${java.version} :: Spring Boot ${spring-boot.version} ::
+  :: Powered by Spring Framework ::

@@ -1,0 +1,182 @@
+# ============================================
+# LibrePM Backend Configuration
+# ============================================
+
+spring:
+  application:
+    name: LibrePM
+
+  profiles:
+    active: desktop
+
+  datasource:
+    url: jdbc:sqlite:${librepm.data.path}/librepm.db?busy_timeout=5000
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 0
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# ============================================
+# LibrePM Custom Properties
+# ============================================
+librepm:
+  mode: desktop
+
+  # Data path is injected via System Property in LibrePMApplication.java
+  # librepm.data.path = user.home/.librepm (or similar)
+  data:
+    path: ${librepm.data.path}
+
+  port:
+    config-file: ${librepm.data.path}/config/backend.port
+    min: 8000
+    max: 9000
+
+  assets:
+    storage-path: ${librepm.data.path}/assets
+    max-file-size: -1
+    # CSV: va bene sia per @Value che per ConfigurationProperties List
+    allowed-extensions: "png,jpg,jpeg,webp,gif,pdf,txt,md,json,csv"
+
+  cors:
+    # CSV: binder -> List<String>
+    allowed-origins: "http://localhost:5173,http://localhost:*,http://127.0.0.1:*,file://*"
+    allow-credentials: true
+    max-age-seconds: 3600
+
+# OpenAPI / Swagger (PRD-14-FR-005)
+springdoc:
+  api-docs:
+    path: /api/docs/openapi
+  swagger-ui:
+    path: /api/docs
+
+  # OAuth2 / OIDC (quando lo attiveremo davvero, lo userà Spring Security)
+  auth:
+    enabled: false
+    registration-id: librepm
+    post-login-redirect: http://localhost:5173/
+
+# ============================================
+# Logging
+# ============================================
+logging:
+  level:
+    root: INFO
+    com.lorenzodm.librepm: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${librepm.data.path}/logs/librepm.log
+    max-size: 10MB
+    max-history: 7
+
+---
+# ============================================
+# Profile: Development (standalone)
+# ============================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+server:
+  port: 8080
+
+librepm:
+  mode: web
+  # In dev mode, we might want to override the system property to keep data local to the project
+  # data:
+  #   path: ./data-dev
+  cors:
+    allowed-origins: "http://localhost:5173,http://localhost:*,http://127.0.0.1:*,file://*"
+    allow-credentials: true
+    max-age-seconds: 3600
+  auth:
+    enabled: false
+
+logging:
+  level:
+    com.lorenzodm.librepm: TRACE
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+---
+# ============================================
+# Profile: Desktop (embedded in Electron)
+# ============================================
+spring:
+  config:
+    activate:
+      on-profile: desktop
+
+server:
+  port: 0
+
+librepm:
+  mode: desktop
+  cors:
+    allowed-origins: "http://localhost:5173,http://localhost:*,http://127.0.0.1:*,file://*"
+    allow-credentials: true
+    max-age-seconds: 3600
+  auth:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    com.lorenzodm.librepm: INFO
+
+---
+# ============================================
+# Profile: Production (futuro cloud)
+# ============================================
+spring:
+  config:
+    activate:
+      on-profile: production
+
+server:
+  port: 8080
+
+librepm:
+  mode: web
+  cors:
+    allowed-origins: "https://example.com"
+    allow-credentials: true
+    max-age-seconds: 3600
+  auth:
+    enabled: true
+    post-login-redirect: https://example.com/
+
+logging:
+  level:
+    root: WARN
+    com.lorenzodm.librepm: INFO

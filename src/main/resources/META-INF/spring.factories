@@ -1,0 +1,2 @@
+org.springframework.boot.SpringApplicationRunListener=\
+com.lorenzodm.librepm.bootstrap.PendingDbImportRunListener

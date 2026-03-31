@@ -1,0 +1,121 @@
+.executive-dashboard {
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+    color: #333;
+    background-color: #f9f9f9;
+}
+
+.dashboard-header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.dashboard-header h1 {
+    font-size: 24px;
+    color: #0056b3;
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-gap: 20px;
+}
+
+.dashboard-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.dashboard-widget {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex: 1;
+    min-width: 300px;
+}
+
+.dashboard-widget h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 18px;
+    color: #444;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.widget-placeholder, .widget-error {
+    text-align: center;
+    padding: 20px;
+    color: #888;
+}
+
+.widget-error {
+    color: #dc3545;
+}
+
+/* Specific Widget Styles */
+
+/* Project Stats */
+.project-summary {
+    background-color: #f0f8ff; /* Light blue tint */
+    border-color: #cce5ff;
+}
+
+.project-status {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.status-on_track { color: #28a745; }
+.status-at_risk { color: #ffc107; }
+.status-delayed { color: #dc3545; }
+.status-blocked { color: #dc3545; font-weight: bold; }
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+/* Charter */
+.charter-section {
+    margin-bottom: 15px;
+}
+
+.charter-section h4 {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.charter-section p {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Risks */
+.risk-item {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-left: 4px solid #ccc;
+}
+
+.risk-high { border-left-color: #dc3545; background-color: #fff5f5; }
+.risk-medium { border-left-color: #ffc107; background-color: #fffdf5; }
+.risk-low { border-left-color: #28a745; }
+
+/* Deliverables */
+.deliverable-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}

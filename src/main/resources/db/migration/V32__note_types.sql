@@ -1,0 +1,11 @@
+-- V32: Add typed notes support (PRD-02-FR-003)
+-- Types: MEMO, RATIONALE, MEETING_NOTE, RISK_NOTE, GRANT_NOTE, SPONSOR_NOTE, AUDIT_NOTE, DECISION, BRIEF
+ALTER TABLE notes ADD COLUMN note_type VARCHAR(32) DEFAULT 'MEMO';
+ALTER TABLE notes ADD COLUMN is_evidence BOOLEAN DEFAULT FALSE;
+ALTER TABLE notes ADD COLUMN is_frozen BOOLEAN DEFAULT FALSE;
+ALTER TABLE notes ADD COLUMN frozen_at TIMESTAMP;
+ALTER TABLE notes ADD COLUMN visibility VARCHAR(32) DEFAULT 'ALL';
+ALTER TABLE notes ADD COLUMN restricted_roles TEXT; -- JSON array of role IDs
+
+CREATE INDEX idx_notes_type ON notes(note_type);
+CREATE INDEX idx_notes_evidence ON notes(is_evidence);

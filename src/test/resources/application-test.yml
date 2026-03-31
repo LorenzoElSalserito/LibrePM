@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: LibrePM-Test
+
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=LEGACY
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+
+  flyway:
+    enabled: false
+
+server:
+  port: 0
+
+librepm:
+  mode: test
+  data:
+    path: ${java.io.tmpdir}/librepm-test
+  assets:
+    storage-path: ${java.io.tmpdir}/librepm-test/assets
+    max-file-size: -1
+    allowed-extensions: "png,jpg,jpeg,webp,gif,pdf,txt,md,json,csv"
+  cors:
+    allowed-origins: "*"
+    allow-credentials: false
+    max-age-seconds: 3600
+  auth:
+    enabled: false
+  port:
+    config-file: ${java.io.tmpdir}/librepm-test/config/backend.port
+    min: 18000
+    max: 19000
+
+logging:
+  level:
+    root: WARN
+    com.lorenzodm.librepm: INFO

@@ -1,0 +1,69 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.4.0'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.lorenzodm'
+version = '0.1.0'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+// Genera META-INF/build-info.properties
+springBoot {
+    buildInfo()
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	// Web + REST
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+
+	// Validation (jakarta.validation)
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+	// JPA/Hibernate
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.hibernate.orm:hibernate-community-dialects'
+
+	// SQLite JDBC driver
+	runtimeOnly 'org.xerial:sqlite-jdbc:3.46.1.3'
+
+	// Flyway
+	implementation 'org.flywaydb:flyway-core'
+
+	// Logging
+	implementation 'org.springframework.boot:spring-boot-starter-logging'
+
+	// Actuator (health/info)
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+
+	// Security + OAuth2 client
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// Config metadata (optional ma utile)
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	// PDF report generation (PRD-14-FR-004)
+	implementation 'com.openhtmltopdf:openhtmltopdf-pdfbox:1.0.10'
+
+	// OpenAPI / Swagger documentation (PRD-14-FR-005)
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+
+	// Test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.security:spring-security-test'
+	testRuntimeOnly 'com.h2database:h2'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

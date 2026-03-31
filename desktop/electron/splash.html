@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LibrePM Loading...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #1e1e1e; /* Dark theme background */
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            user-select: none;
+            -webkit-app-region: drag; /* Allow dragging the window */
+        }
+
+        .logo-container {
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 128px;
+            height: 128px;
+            /* Fallback style if image is missing */
+            background: transparent;
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            /* Drop shadow for better visibility on dark bg */
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 500;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .loader {
+            width: 200px;
+            height: 4px;
+            background-color: #333;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .loader-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 50%;
+            background: linear-gradient(90deg, #4ba298, #2c6b98);
+            border-radius: 2px;
+            animation: loading 1.5s infinite ease-in-out;
+        }
+
+        @keyframes loading {
+            0% { left: -50%; }
+            100% { left: 100%; }
+        }
+
+        .status {
+            font-size: 13px;
+            color: #888;
+            margin-top: 16px;
+            min-height: 20px;
+            transition: color 0.3s;
+        }
+
+        .status.warning {
+            color: #e8a838;
+            font-size: 14px;
+            max-width: 320px;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        #retryBtn {
+            display: none;
+            margin-top: 18px;
+            padding: 10px 28px;
+            background: linear-gradient(90deg, #4ba298, #2c6b98);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 15px;
+            cursor: pointer;
+            -webkit-app-region: no-drag;
+            transition: opacity 0.2s;
+        }
+
+        #retryBtn:hover {
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body>
+    <div class="logo-container">
+        <div class="logo">
+            <!-- Updated path to point to the copied asset -->
+            <img src="Logo.svg" onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'; this.parentElement.innerText='JL'">
+        </div>
+    </div>
+    <h1>Now Loading</h1>
+    <p class="status" id="status">Avvio in corso...</p>
+    <div class="loader" id="loader">
+        <div class="loader-bar"></div>
+    </div>
+    <button id="retryBtn" onclick="handleRetry()">Riprova</button>
+    <script>
+        function handleRetry() {
+            // Reset UI to loading state
+            var status = document.getElementById('status');
+            status.textContent = 'Nuovo tentativo...';
+            status.className = 'status';
+            document.getElementById('loader').style.display = '';
+            document.getElementById('retryBtn').style.display = 'none';
+            // Notify main process
+            if (window.splashApi && window.splashApi.retry) {
+                window.splashApi.retry();
+            }
+        }
+    </script>
+</body>
+</html>

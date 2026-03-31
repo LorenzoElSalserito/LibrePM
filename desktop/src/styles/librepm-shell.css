@@ -1,0 +1,712 @@
+/**
+ * LibrePM Shell CSS
+ * Stili principali per l'applicazione
+ * 
+ * @author Lorenzo DM
+ * @since 0.2.0
+ * @updated 0.3.1 - Aggiunto supporto tema scuro, fix layout
+ */
+
+/* ========================================
+   CSS Variables - Light Theme (Default)
+   ======================================== */
+
+:root {
+    --jl-primary: #4fc3f7;
+    --jl-primary-dark: #0288d1;
+    --jl-secondary: #1a1a2e;
+    --jl-sidebar-bg: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+    --jl-header-height: 56px;
+    --jl-sidebar-width: 220px;
+    --jl-sidebar-collapsed: 60px;
+    --jl-rightpanel-width: 280px;
+
+    /* Light theme colors */
+    --jl-bg-primary: #f5f7fa;
+    --jl-bg-secondary: #ffffff;
+    --jl-bg-card: #ffffff;
+    --jl-text-primary: #212529;
+    --jl-text-secondary: #6c757d;
+    --jl-text-muted: #6c757d;
+    --jl-border-color: #e9ecef;
+    --jl-input-bg: #ffffff;
+    --jl-input-border: #ced4da;
+    --jl-table-stripe: rgba(0, 0, 0, 0.02);
+    --jl-scrollbar-track: #f1f1f1;
+    --jl-scrollbar-thumb: #c1c1c1;
+    --jl-scrollbar-thumb-hover: #a1a1a1;
+}
+
+/* ========================================
+   CSS Variables - Dark Theme
+   ======================================== */
+
+[data-theme="dark"],
+.jl-root.dark-theme {
+    /* Dark theme colors - High Contrast */
+    --jl-bg-primary: #121212;   /* Sfondo pagina molto scuro */
+    --jl-bg-secondary: #1e1e1e; /* Pannelli laterali/header */
+    --jl-bg-card: #252525;      /* Card e contenitori */
+    --jl-text-primary: #ffffff; /* Testo bianco */
+    --jl-text-secondary: #b0b0b0; /* Testo secondario grigio chiaro */
+    --jl-text-muted: #888888;
+    --jl-border-color: #333333; /* Bordi scuri */
+    --jl-input-bg: #2d2d2d;     /* Input scuri */
+    --jl-input-border: #444444;
+    --jl-table-stripe: rgba(255, 255, 255, 0.03);
+    --jl-scrollbar-track: #1e1e1e;
+    --jl-scrollbar-thumb: #444444;
+    --jl-scrollbar-thumb-hover: #666666;
+}
+
+/* ========================================
+   Base Layout - Full Screen
+   ======================================== */
+
+html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.jl-root {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background: var(--jl-bg-primary);
+    color: var(--jl-text-primary);
+}
+
+.jl-appframe {
+    width: 100%;
+    height: 100%;
+}
+
+.jl-shell {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+
+/* ========================================
+   Main Content Area
+   ======================================== */
+
+.jl-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--jl-bg-primary);
+    min-width: 0; /* Prevent flex overflow */
+}
+
+.jl-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    min-height: 0; /* Prevent flex overflow */
+}
+
+.jl-page {
+    flex: 1;
+    overflow: auto;
+    background: var(--jl-bg-primary);
+    min-width: 0; /* Prevent flex overflow */
+}
+
+/* ========================================
+   Top Header
+   ======================================== */
+
+.jl-header {
+    height: var(--jl-header-height);
+    min-height: var(--jl-header-height);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1rem;
+    background: var(--jl-bg-secondary);
+    border-bottom: 1px solid var(--jl-border-color);
+}
+
+.jl-header-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--jl-text-primary);
+}
+
+.jl-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ========================================
+   Right Panel
+   ======================================== */
+
+.jl-rightpanel {
+    width: var(--jl-rightpanel-width);
+    min-width: var(--jl-rightpanel-width);
+    max-width: var(--jl-rightpanel-width);
+    background: var(--jl-bg-secondary);
+    border-left: 1px solid var(--jl-border-color);
+    padding: 1rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, padding 0.2s ease, opacity 0.2s ease;
+}
+
+.jl-rightpanel.closed {
+    width: 0;
+    min-width: 0;
+    max-width: 0;
+    padding: 0;
+    overflow: hidden;
+    opacity: 0;
+}
+
+/* ========================================
+   Utilities
+   ======================================== */
+
+.jl-muted {
+    color: var(--jl-text-muted) !important;
+}
+
+.jl-loading {
+    background: var(--jl-sidebar-bg);
+    color: white;
+}
+
+.jl-error {
+    background: var(--jl-bg-primary);
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+.jl-page::-webkit-scrollbar,
+.jl-rightpanel::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.jl-page::-webkit-scrollbar-track,
+.jl-rightpanel::-webkit-scrollbar-track {
+    background: var(--jl-scrollbar-track);
+}
+
+.jl-page::-webkit-scrollbar-thumb,
+.jl-rightpanel::-webkit-scrollbar-thumb {
+    background: var(--jl-scrollbar-thumb);
+    border-radius: 4px;
+}
+
+.jl-page::-webkit-scrollbar-thumb:hover,
+.jl-rightpanel::-webkit-scrollbar-thumb:hover {
+    background: var(--jl-scrollbar-thumb-hover);
+}
+
+/* ========================================
+   Dark Theme - Bootstrap Overrides
+   ======================================== */
+
+[data-theme="dark"] .card,
+.jl-root.dark-theme .card {
+    background-color: var(--jl-bg-card);
+    border-color: var(--jl-border-color);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .card-header,
+.jl-root.dark-theme .card-header {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--jl-border-color);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .card-body,
+.jl-root.dark-theme .card-body {
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select,
+.jl-root.dark-theme .form-control,
+.jl-root.dark-theme .form-select {
+    background-color: var(--jl-input-bg);
+    border-color: var(--jl-input-border);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .form-control:focus,
+[data-theme="dark"] .form-select:focus,
+.jl-root.dark-theme .form-control:focus,
+.jl-root.dark-theme .form-select:focus {
+    background-color: var(--jl-input-bg);
+    border-color: var(--jl-primary);
+    color: var(--jl-text-primary);
+    box-shadow: 0 0 0 0.2rem rgba(79, 195, 247, 0.25);
+}
+
+[data-theme="dark"] .form-control::placeholder,
+.jl-root.dark-theme .form-control::placeholder {
+    color: var(--jl-text-muted);
+}
+
+[data-theme="dark"] .table,
+.jl-root.dark-theme .table {
+    color: var(--jl-text-primary);
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: var(--jl-table-stripe);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.05);
+    --bs-table-border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .table thead th,
+.jl-root.dark-theme .table thead th {
+    background-color: var(--jl-bg-card) !important;
+    border-color: var(--jl-border-color);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .table td,
+.jl-root.dark-theme .table td {
+    border-color: var(--jl-border-color);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .bg-light,
+.jl-root.dark-theme .bg-light {
+    background-color: var(--jl-bg-card) !important;
+    color: var(--jl-text-primary) !important;
+}
+
+[data-theme="dark"] .bg-white,
+.jl-root.dark-theme .bg-white {
+    background-color: var(--jl-bg-card) !important;
+    color: var(--jl-text-primary) !important;
+}
+
+[data-theme="dark"] .border,
+.jl-root.dark-theme .border {
+    border-color: var(--jl-border-color) !important;
+}
+
+[data-theme="dark"] .border-bottom,
+[data-theme="dark"] .border-top,
+.jl-root.dark-theme .border-bottom,
+.jl-root.dark-theme .border-top {
+    border-color: var(--jl-border-color) !important;
+}
+
+[data-theme="dark"] .text-muted,
+.jl-root.dark-theme .text-muted {
+    color: var(--jl-text-secondary) !important;
+}
+
+[data-theme="dark"] .text-dark,
+.jl-root.dark-theme .text-dark {
+    color: var(--jl-text-primary) !important;
+}
+
+[data-theme="dark"] .modal-content,
+.jl-root.dark-theme .modal-content {
+    background-color: var(--jl-bg-card);
+    border-color: var(--jl-border-color);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .modal-header,
+[data-theme="dark"] .modal-footer,
+.jl-root.dark-theme .modal-header,
+.jl-root.dark-theme .modal-footer {
+    border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .btn-close,
+.jl-root.dark-theme .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+[data-theme="dark"] kbd,
+.jl-root.dark-theme kbd {
+    background: #374151;
+    border-color: #4b5563;
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .dropdown-menu,
+.jl-root.dark-theme .dropdown-menu {
+    background-color: var(--jl-bg-card);
+    border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .dropdown-item,
+.jl-root.dark-theme .dropdown-item {
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .dropdown-item:hover,
+.jl-root.dark-theme .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .list-group-item,
+.jl-root.dark-theme .list-group-item {
+    background-color: var(--jl-bg-card);
+    border-color: var(--jl-border-color);
+    color: var(--jl-text-primary);
+}
+
+/* ========================================
+   Responsive
+   ======================================== */
+
+@media (max-width: 992px) {
+    .jl-rightpanel {
+        width: 240px;
+        min-width: 240px;
+        max-width: 240px;
+    }
+}
+
+@media (max-width: 768px) {
+    .jl-rightpanel {
+        position: fixed;
+        right: 0;
+        top: var(--jl-header-height);
+        bottom: 0;
+        z-index: 1000;
+        box-shadow: -4px 0 16px rgba(0,0,0,0.2);
+    }
+
+    .jl-rightpanel.closed {
+        transform: translateX(100%);
+        opacity: 1;
+    }
+}
+
+/* ========================================
+   Planner Table Styles
+   ======================================== */
+
+.planner-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.planner-table-container {
+    flex: 1;
+    overflow: auto;
+    min-height: 0;
+}
+
+.planner-table-container table {
+    min-width: 900px;
+    margin-bottom: 0;
+}
+
+.planner-table-container th {
+    background: var(--jl-bg-card);
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    color: var(--jl-text-primary);
+}
+
+.planner-table-container td {
+    vertical-align: middle;
+    font-size: 0.9rem;
+    color: var(--jl-text-primary);
+}
+
+.planner-table-container .form-control,
+.planner-table-container .form-select {
+    border-radius: 4px;
+}
+
+.planner-info,
+.planner-footer {
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+/* ========================================
+   Card Styles
+   ======================================== */
+
+.card {
+    border-radius: 8px;
+}
+
+.card-header {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* ========================================
+   Button Styles
+   ======================================== */
+
+.btn-sm {
+    font-size: 0.85rem;
+    padding: 0.25rem 0.75rem;
+}
+
+/* ========================================
+   Badge Styles
+   ======================================== */
+
+.badge {
+    font-weight: 500;
+}
+
+/* ========================================
+   Form Styles
+   ======================================== */
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--jl-primary);
+    box-shadow: 0 0 0 0.2rem rgba(79, 195, 247, 0.25);
+}
+
+/* ========================================
+   Keyboard shortcut styles
+   ======================================== */
+
+kbd {
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 0.1em 0.4em;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+/* ========================================
+   Settings Page Styles
+   ======================================== */
+
+.settings-page .card {
+    transition: box-shadow 0.2s ease;
+}
+
+.settings-page .card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   Animation
+   ======================================== */
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { transform: translateY(-10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.2s ease;
+}
+
+.slide-in {
+    animation: slideIn 0.2s ease;
+}
+
+/* ========================================
+   Custom Form Switch for Dark Theme
+   ======================================== */
+
+[data-theme="dark"] .form-check-input,
+.jl-root.dark-theme .form-check-input {
+    background-color: var(--jl-input-bg);
+    border-color: var(--jl-input-border);
+}
+
+[data-theme="dark"] .form-check-input:checked,
+.jl-root.dark-theme .form-check-input:checked {
+    background-color: var(--jl-primary);
+    border-color: var(--jl-primary);
+}
+
+/* ========================================
+   Alert Styles for Dark Theme
+   ======================================== */
+
+[data-theme="dark"] .alert-danger,
+.jl-root.dark-theme .alert-danger {
+    background-color: rgba(220, 53, 69, 0.2);
+    border-color: rgba(220, 53, 69, 0.5);
+    color: #f8d7da;
+}
+
+/* ========================================
+   Notes Page Styles
+   ======================================== */
+
+.notes-page {
+    display: flex;
+    height: 100%;
+}
+
+.notes-sidebar {
+    flex-shrink: 0;
+}
+
+.notes-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* ========================================
+   Kanban Styles
+   ======================================== */
+
+.kanban-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.kanban-board {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+    overflow-x: auto;
+    padding: 1rem;
+    min-height: 0;
+}
+
+.kanban-column {
+    min-width: 280px;
+    max-width: 320px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: var(--jl-bg-card);
+    border-radius: 8px;
+    max-height: 100%;
+}
+
+.kanban-column-header {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--jl-border-color);
+    flex-shrink: 0;
+    color: var(--jl-text-primary);
+}
+
+.kanban-column-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.kanban-card {
+    background: var(--jl-bg-secondary);
+    border: 1px solid var(--jl-border-color);
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: grab;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    color: var(--jl-text-primary);
+}
+
+.kanban-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+    transform: rotate(2deg);
+}
+
+/* ========================================
+   Calendar Styles
+   ======================================== */
+
+.calendar-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 1rem;
+}
+
+.rbc-calendar {
+    flex: 1;
+    min-height: 0;
+}
+
+[data-theme="dark"] .rbc-calendar,
+.jl-root.dark-theme .rbc-calendar {
+    color: var(--jl-text-primary);
+}
+
+[data-theme="dark"] .rbc-toolbar button,
+.jl-root.dark-theme .rbc-toolbar button {
+    color: var(--jl-text-primary);
+    border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .rbc-header,
+.jl-root.dark-theme .rbc-header {
+    border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .rbc-month-view,
+[data-theme="dark"] .rbc-time-view,
+.jl-root.dark-theme .rbc-month-view,
+.jl-root.dark-theme .rbc-time-view {
+    border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .rbc-day-bg,
+.jl-root.dark-theme .rbc-day-bg {
+    border-color: var(--jl-border-color);
+}
+
+[data-theme="dark"] .rbc-off-range-bg,
+.jl-root.dark-theme .rbc-off-range-bg {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .rbc-today,
+.jl-root.dark-theme .rbc-today {
+    background-color: rgba(79, 195, 247, 0.15);
+}
+
+/* ========================================
+   Modal Z-Index Fix
+   ======================================== */
+.modal {
+    z-index: 1050;
+}
+
+.modal-backdrop {
+    z-index: 1040;
+}
+
+/* Command Palette Overlay */
+.cmd-overlay {
+    z-index: 9999 !important;
+}

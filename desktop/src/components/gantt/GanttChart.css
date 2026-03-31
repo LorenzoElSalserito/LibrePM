@@ -1,0 +1,179 @@
+/*
+ * LibrePM Gantt Chart Custom Styling (PRD-10)
+ * Ensures UX consistency with the app's theme.
+ */
+
+/* === GENERAL CONTAINER & GRID === */
+
+/* Outer wrapper — only horizontal scroll, natural height */
+.gantt-outer {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fff;
+    overflow: hidden; /* round corners clip */
+}
+
+.gantt-container {
+    --gantt-border-color: #e0e0e0;
+    --gantt-header-background: #f8f9fa;
+    --gantt-body-background: #ffffff;
+    --gantt-today-highlight: rgba(255, 204, 102, 0.2);
+    scroll-behavior: smooth;
+    /* Only horizontal scroll — vertical is handled by .jl-page */
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.gantt .grid-header {
+    background-color: var(--gantt-header-background);
+    border-bottom: 1.5px solid var(--gantt-border-color);
+}
+
+.gantt .grid-row, .gantt .grid-header {
+    fill: var(--gantt-body-background) !important;
+}
+
+.gantt .grid-row:nth-child(even) {
+    fill: var(--gantt-header-background) !important; /* Zebra striping */
+}
+
+.gantt .grid-background {
+    fill: none;
+}
+
+.gantt .tick {
+    stroke: var(--gantt-border-color);
+    stroke-width: 0.2;
+}
+
+.gantt .today-highlight {
+    fill: var(--gantt-today-highlight);
+}
+
+
+/* === TASK BARS STYLING === */
+
+/* Default bar style */
+.gantt .bar {
+    fill: #3498db; /* Bootstrap primary blue */
+    stroke: #2980b9;
+    stroke-width: 0.5;
+    transition: all 0.2s ease;
+}
+.gantt .bar:hover {
+    opacity: 0.8;
+}
+
+/* Progress bar inside the task bar */
+.gantt .bar-progress {
+    fill: #2980b9; /* Darker shade of blue */
+}
+
+/* Text on the bar */
+.gantt .bar-label {
+    fill: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    dominant-baseline: central;
+    text-anchor: middle;
+    pointer-events: none;
+}
+
+/* Hide drag handles — drag-to-update is disabled */
+.gantt .handle {
+    display: none !important;
+}
+
+
+/* === SPECIALIZED TASK TYPES === */
+
+/* Critical Path Tasks */
+.gantt .bar-critical .bar {
+    fill: #e74c3c; /* Bootstrap danger red */
+    stroke: #c0392b;
+}
+.gantt .bar-critical .bar-progress {
+    fill: #c0392b; /* Darker red */
+}
+
+/* Summary Tasks (aggregates) */
+.gantt .bar-summary .bar {
+    fill: #555; /* Dark gray */
+    stroke: #333;
+}
+.gantt .bar-summary .bar-progress {
+    fill: #333; /* Darker gray */
+}
+/* Summary tasks have little arrows at the end */
+.gantt .bar-summary:after, .gantt .bar-summary:before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    border: 5px solid transparent;
+    border-top-color: #555;
+    transform: translateY(-50%);
+}
+
+/* Milestones (rendered as diamonds) */
+.gantt .bar-milestone .bar {
+    fill: #f39c12; /* Bootstrap warning yellow */
+    stroke: #d35400;
+    stroke-width: 1;
+}
+.gantt .bar-milestone .bar-progress {
+    fill: #f39c12; /* Milestones have no progress, but set it anyway */
+}
+.gantt .bar-milestone .bar-label {
+    fill: #333; /* Darker text for yellow background */
+    text-shadow: none;
+}
+
+
+/* === DEPENDENCY ARROWS === */
+.gantt .arrow {
+    fill: none;
+    stroke: #666;
+    stroke-width: 1.5;
+}
+.gantt .arrow:hover {
+    stroke: #333;
+}
+
+
+/* === POPUP STYLING === */
+.gantt-popup-wrapper {
+    position: absolute;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+    padding: 12px;
+    font-size: 13px;
+    color: #333;
+    min-width: 240px;
+    z-index: 10;
+    pointer-events: none; /* Let clicks pass through to the chart */
+    transition: opacity 0.2s;
+}
+
+.gantt-popup-wrapper .popup-header {
+    font-weight: bold;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+}
+
+.gantt-popup-wrapper .popup-content div {
+    margin-bottom: 4px;
+}
+
+.gantt-popup-wrapper .popup-content strong {
+    color: #555;
+}
+
+.gantt-popup-wrapper .popup-content .text-danger {
+    color: #e74c3c !important;
+    font-weight: bold;
+}

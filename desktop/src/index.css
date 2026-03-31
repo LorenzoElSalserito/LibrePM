@@ -1,0 +1,190 @@
+/**
+ * LibrePM Base CSS
+ * 
+ * @author Lorenzo DM
+ * @since 0.2.0
+ */
+
+/* Reset */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* Base */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #212529;
+    background-color: #f5f7fa;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+    width: 100%;
+    height: 100%;
+}
+
+/* Links */
+a {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+a:hover {
+    color: #0a58ca;
+    text-decoration: underline;
+}
+
+/* Focus */
+:focus-visible {
+    outline: 2px solid #4fc3f7;
+    outline-offset: 2px;
+}
+
+/* Selection */
+::selection {
+    background-color: rgba(79, 195, 247, 0.3);
+}
+
+/* Scrollbar - Global */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* Tables */
+table {
+    border-collapse: collapse;
+}
+
+/* Images */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Hidden */
+.hidden {
+    display: none !important;
+}
+
+/* Screen reader only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Loading spinner */
+.spinner-border {
+    animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+    to { transform: rotate(360deg); }
+}
+
+/* Toast customization */
+.Toastify__toast-container {
+    z-index: 20000;
+    pointer-events: none; /* Fondamentale: lascia passare i click */
+}
+
+.Toastify__toast {
+    font-family: inherit;
+    font-size: 0.9rem;
+    pointer-events: auto; /* Riabilita i click solo sui toast */
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+}
+
+/* Markdown Editor customization */
+.w-md-editor {
+    font-family: inherit !important;
+}
+
+.wmde-markdown {
+    font-family: inherit !important;
+}
+
+/* React Big Calendar customization */
+.rbc-calendar {
+    font-family: inherit;
+}
+
+/* Print styles */
+@media print {
+    .jl-sidebar,
+    .jl-rightpanel,
+    .jl-header-actions {
+        display: none !important;
+    }
+    
+    .jl-page {
+        overflow: visible !important;
+    }
+}
+
+/* ========================================
+   Safety Net: Force Input Interactivity
+   ======================================== */
+input, textarea, select {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    pointer-events: auto !important;
+    cursor: text;
+}
+
+/* Assicura che le modali siano sempre sopra */
+.modal {
+    z-index: 10000 !important;
+}
+
+/* ========================================
+   Accessibility
+   ======================================== */
+
+/* Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

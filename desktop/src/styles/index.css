@@ -1,0 +1,322 @@
+/**
+ * LibrePM Base CSS
+ * 
+ * @author Lorenzo DM
+ * @since 0.2.0
+ * @updated 0.3.1 - Fix layout full screen, supporto tema
+ */
+
+/* ========================================
+   Reset
+   ======================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* ========================================
+   Base HTML/Body - Full Screen Layout
+   ======================================== */
+
+html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ========================================
+   Theme Variables
+   ======================================== */
+
+/* Light Theme (default) */
+:root {
+  color-scheme: light;
+  --jl-body-bg: #f5f7fa;
+  --jl-body-color: #212529;
+}
+
+/* Dark Theme */
+[data-theme="dark"],
+html[data-theme="dark"] body {
+  color-scheme: dark;
+  --jl-body-bg: #1a1a2e;
+  --jl-body-color: #f8f9fa;
+}
+
+/* Apply theme colors */
+body {
+  background-color: var(--jl-body-bg, #f5f7fa);
+  color: var(--jl-body-color, #212529);
+}
+
+[data-theme="dark"] body {
+  background-color: #1a1a2e;
+  color: #f8f9fa;
+}
+
+/* ========================================
+   Links
+   ======================================== */
+
+a {
+  color: #0d6efd;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #0a58ca;
+  text-decoration: underline;
+}
+
+[data-theme="dark"] a {
+  color: #4fc3f7;
+}
+
+[data-theme="dark"] a:hover {
+  color: #81d4fa;
+}
+
+/* ========================================
+   Focus
+   ======================================== */
+
+:focus-visible {
+  outline: 2px solid #4fc3f7;
+  outline-offset: 2px;
+}
+
+/* ========================================
+   Selection
+   ======================================== */
+
+::selection {
+  background-color: rgba(79, 195, 247, 0.3);
+}
+
+/* ========================================
+   Scrollbar - Global
+   ======================================== */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #2d2d44;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #4a4a6a;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #5a5a7a;
+}
+
+/* ========================================
+   Tables
+   ======================================== */
+
+table {
+  border-collapse: collapse;
+}
+
+/* ========================================
+   Images
+   ======================================== */
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ========================================
+   Hidden
+   ======================================== */
+
+.hidden {
+  display: none !important;
+}
+
+/* ========================================
+   Screen reader only
+   ======================================== */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ========================================
+   Loading spinner
+   ======================================== */
+
+.spinner-border {
+  animation: spinner-border .75s linear infinite;
+}
+
+@keyframes spinner-border {
+  to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   Toast customization
+   ======================================== */
+
+.Toastify__toast {
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+/* ========================================
+   Modal backdrop
+   ======================================== */
+
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* ========================================
+   Markdown Editor customization
+   ======================================== */
+
+.w-md-editor {
+  font-family: inherit !important;
+}
+
+.wmde-markdown {
+  font-family: inherit !important;
+}
+
+/* ========================================
+   React Big Calendar customization
+   ======================================== */
+
+.rbc-calendar {
+  font-family: inherit;
+}
+
+/* ========================================
+   Print styles
+   ======================================== */
+
+@media print {
+  .jl-sidebar,
+  .jl-rightpanel,
+  .jl-header-actions {
+    display: none !important;
+  }
+
+  .jl-page {
+    overflow: visible !important;
+  }
+}
+
+/* ========================================
+   Utilities
+   ======================================== */
+
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.no-select {
+  user-select: none;
+}
+
+/* ========================================
+   Gantt Chart - Custom Styles (PRD-10)
+   ======================================== */
+
+/* Critical path tasks */
+.gantt .bar-wrapper .bar-critical .bar-progress,
+.gantt .bar-wrapper .bar-critical .bar {
+  fill: #e74c3c !important;
+}
+
+/* Summary tasks */
+.gantt .bar-wrapper .bar-summary .bar-progress,
+.gantt .bar-wrapper .bar-summary .bar {
+  fill: #6c757d !important;
+}
+
+/* Milestones */
+.gantt .bar-wrapper .bar-milestone .bar-progress,
+.gantt .bar-wrapper .bar-milestone .bar {
+  fill: #ffc107 !important;
+}
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Template card hover */
+.template-card:hover {
+  transform: translateY(-2px);
+  transition: transform 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Fade-in animation */
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
