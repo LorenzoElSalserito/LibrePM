@@ -1,5 +1,5 @@
 # LibrePM
-
+![Icon.png](desktop/src/assets/Icon.png)
 **LibrePM** is a European project governance platform for project finance, grant management and operational planning — privacy-first, local-first, EU-oriented.
 
 It enables individuals, teams, nonprofits, SMEs, professional studios, public-sector-adjacent organizations and research consortia to plan, finance, monitor, document and govern projects and programmes without relying on invasive telemetry or cloud lock-in.
