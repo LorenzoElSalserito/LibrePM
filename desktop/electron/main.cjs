@@ -6,7 +6,7 @@
  * @updated 0.6.2 - Added Splash Screen & Custom Logo
  */
 
-const { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const http = require("http");
@@ -519,6 +519,8 @@ app.whenReady().then(async () => {
     console.log("[Main] cwd:", process.cwd());
     console.log("[Main] userData:", app.getPath("userData"));
     console.log("[Main] Data path:", getLibrePMHome());
+
+    Menu.setApplicationMenu(null);
 
     // 1. Show Splash Screen immediately
     createSplashWindow();
