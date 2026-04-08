@@ -274,6 +274,11 @@ contextBridge.exposeInMainWorld("librepm", {
      */
     openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
 
+    /**
+     * Opens the default mail client with a prefilled bug report
+     */
+    reportBug: (source = "general") => ipcRenderer.invoke("bug-report:open", source),
+
     // ========================================
     // System Info
     // ========================================

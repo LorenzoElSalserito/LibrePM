@@ -17,6 +17,7 @@ dist-electron
 
 # LibrePm Specific Build Artifacts
 backend-libs/
+build-resources/
 jre/
 
 # Local Env Files

@@ -24,19 +24,35 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew build -x test
+        run: ./gradlew clean build -x test
+
+      - name: Prepare Backend Artifact
+        run: |
+          mkdir -p ci-artifacts/backend
+          JAR_PATH="$(find build/libs -maxdepth 1 -type f -name '*.jar' ! -name '*-plain.jar' -printf '%T@ %p\n' | sort -nr | head -n 1 | cut -d' ' -f2-)"
+          test -n "$JAR_PATH"
+          cp "$JAR_PATH" ci-artifacts/backend/backend.jar
 
       - name: Upload Backend Artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
-          path: build/libs/*.jar
+          path: ci-artifacts/backend/backend.jar
 
   build-desktop:
     needs: build-backend
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            target: linux
+            artifact_name: desktop-app-linux-x64
+          - os: windows-latest
+            target: win
+            artifact_name: desktop-app-windows-x64
+          - os: macos-latest
+            target: mac
+            artifact_name: desktop-app-macos-native
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -59,18 +75,6 @@ jobs:
           name: backend-jar
           path: build/libs
 
-      # Generazione JRE Custom con jlink
-      - name: Generate Custom JRE
-        shell: bash
-        run: |
-          jlink \
-          --add-modules java.base,java.desktop,java.instrument,java.logging,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,java.xml,jdk.unsupported,jdk.crypto.ec,jdk.localedata \
-          --compress=2 \
-          --no-header-files \
-          --no-man-pages \
-          --strip-debug \
-          --output desktop/jre
-
       - name: Install Dependencies
         working-directory: ./desktop
         shell: bash
@@ -78,17 +82,20 @@ jobs:
 
       - name: Build & Package Electron App
         working-directory: ./desktop
+        shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npx vite build && npx electron-builder
+        run: npm run prepare:desktop && npx electron-builder --${{ matrix.target }} --publish never
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: desktop-app-${{ matrix.os }}
+          name: ${{ matrix.artifact_name }}
           path: |
             desktop/dist-electron/*.AppImage
+            desktop/dist-electron/*.deb
+            desktop/dist-electron/*.snap
             desktop/dist-electron/*.exe
             desktop/dist-electron/*.zip
             desktop/dist-electron/*.dmg
@@ -133,9 +140,9 @@ jobs:
         run: |
           mkdir -p release-files
           cp artifacts/source-code/* release-files/ || true
-          cp artifacts/desktop-app-ubuntu-latest/* release-files/ || true
-          cp artifacts/desktop-app-windows-latest/* release-files/ || true
-          cp artifacts/desktop-app-macos-latest/* release-files/ || true
+          cp artifacts/desktop-app-linux-x64/* release-files/ || true
+          cp artifacts/desktop-app-windows-x64/* release-files/ || true
+          cp artifacts/desktop-app-macos-native/* release-files/ || true
           cp artifacts/backend-jar/* release-files/ || true
           ls -la release-files/
 

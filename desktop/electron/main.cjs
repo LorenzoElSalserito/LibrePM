@@ -23,11 +23,18 @@ if (process.env.LIBREPM_DISABLE_GPU === "1") {
 }
 
 const BACKEND_DEFAULT_PORT = 8080;
+const BUG_REPORT_RECIPIENT = "commercial.lorenzodm@gmail.com";
+const LOG_BUFFER_LIMIT = 200;
+const LOG_TEXT_LIMIT = 12000;
 
 let mainWindow = null;
 let splashWindow = null;
 let backendPort = BACKEND_DEFAULT_PORT;
 let backendProcess = null;
+let latestStartupFailure = null;
+const rendererLogBuffer = [];
+const backendLogBuffer = [];
+const mainLogBuffer = [];
 
 // =========================================================
 // Focus Broker v2.1 (Conservative + webContents key focus)
@@ -113,6 +120,61 @@ function nowStamp() {
     )}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
 }
 
+function trimLogBuffer(buffer) {
+    while (buffer.length > LOG_BUFFER_LIMIT) {
+        buffer.shift();
+    }
+}
+
+function appendLog(buffer, level, message) {
+    buffer.push(`[${new Date().toISOString()}] [${level}] ${message}`);
+    trimLogBuffer(buffer);
+}
+
+function serializeLogPart(part) {
+    if (typeof part === "string") return part;
+    try {
+        return JSON.stringify(part);
+    } catch (_) {
+        return String(part);
+    }
+}
+
+function truncateText(text, maxLength = LOG_TEXT_LIMIT) {
+    if (text.length <= maxLength) return text;
+    return `${text.slice(text.length - maxLength)}\n[truncated]`;
+}
+
+function getLogSection(title, buffer) {
+    const content = buffer.length ? buffer.join("\n") : "No logs captured.";
+    return `=== ${title} ===\n${truncateText(content)}`;
+}
+
+function openBugReportEmail(source = "general") {
+    const subject = `[LibrePM] Bug Report (${source})`;
+    const body = [
+        "Please describe the issue here.",
+        "",
+        `Source: ${source}`,
+        `App version: ${app.getVersion()}`,
+        `Platform: ${process.platform}`,
+        `Arch: ${process.arch}`,
+        `Electron: ${process.versions.electron}`,
+        `Chrome: ${process.versions.chrome}`,
+        `Node: ${process.versions.node}`,
+        latestStartupFailure ? `Startup failure: ${latestStartupFailure}` : "Startup failure: none recorded",
+        "",
+        getLogSection("MAIN LOGS", mainLogBuffer),
+        "",
+        getLogSection("FRONTEND LOGS", rendererLogBuffer),
+        "",
+        getLogSection("BACKEND LOGS", backendLogBuffer)
+    ].join("\n");
+
+    const url = `mailto:${BUG_REPORT_RECIPIENT}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    return shell.openExternal(url);
+}
+
 // ----------------------------
 // Backend Management (Spawn & Port Reading)
 // ----------------------------
@@ -191,8 +253,8 @@ function getJavaExecutable() {
         return bundledJava;
     }
 
-    console.warn("[Main] Bundled JRE not found, falling back to system java");
-    return "java";
+    console.warn(`[Main] Bundled JRE not found at ${bundledJava}, falling back to system java`);
+    return process.platform === "win32" ? "java.exe" : "java";
 }
 
 function getBackendJar() {
@@ -209,14 +271,12 @@ function getBackendJar() {
         return null;
     }
 
-    const files = fs.readdirSync(libPath);
-    const jarFile = files.find(f => f.endsWith(".jar") && !f.includes("plain")); // Avoid plain jars if any
-
-    if (jarFile) {
-        return path.join(libPath, jarFile);
+    const canonicalJarPath = path.join(libPath, "backend.jar");
+    if (fs.existsSync(canonicalJarPath)) {
+        return canonicalJarPath;
     }
-    
-    console.error("[Main] No backend JAR found in:", libPath);
+
+    console.error("[Main] Canonical backend JAR not found:", canonicalJarPath);
     return null;
 }
 
@@ -262,14 +322,17 @@ function startBackend() {
     });
 
     backendProcess.stdout.on('data', (data) => {
+        appendLog(backendLogBuffer, "stdout", String(data).trim());
         console.log(`[Backend] ${data}`);
     });
 
     backendProcess.stderr.on('data', (data) => {
+        appendLog(backendLogBuffer, "stderr", String(data).trim());
         console.error(`[Backend] ${data}`);
     });
 
     backendProcess.on('close', (code) => {
+        appendLog(backendLogBuffer, "close", `Process exited with code ${code}`);
         console.log(`[Backend] Process exited with code ${code}`);
         backendProcess = null;
     });
@@ -353,6 +416,8 @@ function showSplashWarning(message) {
         if(l){ l.style.display='none'; }
         var b = document.getElementById('retryBtn');
         if(b){ b.style.display='inline-block'; }
+        var bug = document.getElementById('bugBtn');
+        if(bug){ bug.style.display='inline-block'; }
     })()`).catch(() => {});
 }
 
@@ -412,6 +477,7 @@ function createWindow() {
     });
 
     mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+        appendLog(mainLogBuffer, "did-fail-load", JSON.stringify({ errorCode, errorDescription, validatedURL }));
         console.error("[Main] did-fail-load", { errorCode, errorDescription, validatedURL });
     });
 
@@ -449,10 +515,12 @@ function createWindow() {
     });
 
     mainWindow.webContents.on("render-process-gone", (_e, details) => {
+        appendLog(mainLogBuffer, "render-process-gone", serializeLogPart(details));
         console.error("[Main] render-process-gone", details);
     });
 
     mainWindow.webContents.on("console-message", (_e, level, message, line, sourceId) => {
+        appendLog(rendererLogBuffer, `console:${level}`, `${message} (${sourceId}:${line})`);
         console.log(`[Renderer][L${level}] ${message} (${sourceId}:${line})`);
     });
 
@@ -497,15 +565,20 @@ async function attemptStartup(isRetry = false) {
         const ready = await waitForBackendReady(backendPort, retries, delay);
 
         if (ready) {
+            latestStartupFailure = null;
             updateSplashStatus("Caricamento interfaccia...");
             createWindow();
         } else {
+            latestStartupFailure = `Backend not ready on port ${backendPort} after ${retries} attempts`;
+            appendLog(mainLogBuffer, "startup-warning", latestStartupFailure);
             console.warn("[Main] Backend not ready after health-check loop");
             showSplashWarning(
                 "WARNING - La App ci sta mettendo pi\u00F9 del dovuto ad avviarsi, riprovare manualmente tra un po'."
             );
         }
     } catch (e) {
+        latestStartupFailure = e?.stack || e?.message || String(e);
+        appendLog(mainLogBuffer, "startup-error", latestStartupFailure);
         console.error("[Main] Startup error:", e);
         showSplashWarning(
             "WARNING - La App ci sta mettendo pi\u00F9 del dovuto ad avviarsi, riprovare manualmente tra un po'."
@@ -531,6 +604,7 @@ app.whenReady().then(async () => {
     // 3. Handle manual retry from splash
     ipcMain.on("splash:retry", () => {
         console.log("[Main] Retry requested from splash");
+        latestStartupFailure = null;
         attemptStartup(true);
     });
 
@@ -640,6 +714,8 @@ ipcMain.handle("data:getLocalDataPath", () => getLibrePMHome());
 ipcMain.handle("shell:openPath", async (_, filePath) => shell.openPath(filePath));
 ipcMain.handle("shell:showItemInFolder", (_, filePath) => shell.showItemInFolder(filePath));
 ipcMain.handle("shell:openExternal", async (_, url) => shell.openExternal(url));
+ipcMain.handle("bug-report:open", async (_, source = "general") => openBugReportEmail(source));
+ipcMain.handle("bug-report:open-startup", async () => openBugReportEmail("startup"));
 
 ipcMain.on("window:minimize", () => mainWindow?.minimize());
 ipcMain.on("window:maximize", () => {
@@ -650,6 +726,7 @@ ipcMain.on("window:close", () => mainWindow?.close());
 
 ipcMain.on("renderer:log", (_, level, ...args) => {
     const prefix = "[Renderer]";
+    appendLog(rendererLogBuffer, level || "log", args.map(serializeLogPart).join(" "));
     if (level === "warn") console.warn(prefix, ...args);
     else if (level === "error") console.error(prefix, ...args);
     else console.log(prefix, ...args);

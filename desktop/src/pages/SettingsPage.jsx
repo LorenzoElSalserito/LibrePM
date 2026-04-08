@@ -302,10 +302,7 @@ export default function SettingsPage({ shell }) {
     };
 
     const handleBugReport = () => {
-        const recipient = "commercial.lorenzodm@gmail.com";
-        const subject = t("bugReport.subject");
-        const body = `${t("bugReport.body")}\n\n${t("bugReport.os")}: ${navigator.platform}\n${t("bugReport.browser")}: ${navigator.userAgent}`;
-        window.open(`mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`);
+        window.librepm?.reportBug?.("settings");
     };
 
     if (loading) {

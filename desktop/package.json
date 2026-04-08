@@ -17,7 +17,20 @@
     "dev:renderer": "vite",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "build": "vite build",
-    "dist": "cd .. && ./gradlew bootJar && cd desktop && vite build && electron-builder",
+    "build:jre": "node scripts/build-jre.cjs",
+    "prepare:backend": "node scripts/run-gradle-wrapper.cjs clean bootJar",
+    "prepare:desktop": "npm run build:jre && npm run build && node scripts/prepare-self-contained.cjs",
+    "prebuild:all": "npm run prepare:backend && npm run prepare:desktop",
+    "build:unpack": "npm run prebuild:all && electron-builder --dir",
+    "build:win": "npm run prebuild:all && electron-builder --win",
+    "build:mac": "npm run prebuild:all && electron-builder --mac",
+    "build:linux": "npm run prebuild:all && electron-builder --linux",
+    "dist": "npm run build:linux",
+    "dist:win": "npm run build:win",
+    "dist:mac": "npm run build:mac",
+    "dist:linux": "npm run build:linux",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "postinstall": "electron-builder install-app-deps",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -66,9 +79,13 @@
     ],
     "extraResources": [
       {
-        "from": "../build/libs",
+        "from": "build-resources/jre",
+        "to": "jre"
+      },
+      {
+        "from": "build-resources/backend",
         "to": "backend-libs",
-        "filter": ["*.jar", "!*-plain.jar"]
+        "filter": ["backend.jar"]
       }
     ],
     "mac": {
@@ -76,8 +93,7 @@
       "icon": "src/assets/icon.icns",
       "target": [
         {
-          "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "target": "dmg"
         }
       ],
       "identity": null,
