@@ -259,7 +259,7 @@ function getSystemJavaExecutable() {
 
 function looksLikeNativeJavaRuntimeFailure(text) {
     if (!text) return false;
-    return /GLIBC_[0-9.]+\s+not found/i.test(text)
+    return /GLIBC_[0-9.]+['"]?\s+not found/i.test(text)
         || /error while loading shared libraries/i.test(text)
         || /No such file or directory/i.test(text)
         || /Exec format error/i.test(text)
@@ -269,7 +269,7 @@ function looksLikeNativeJavaRuntimeFailure(text) {
 
 function summarizeRuntimeFailure(result) {
     const details = (result?.output || result?.error?.message || "").trim();
-    if (/GLIBC_[0-9.]+\s+not found/i.test(details)) {
+    if (/GLIBC_[0-9.]+['"]?\s+not found/i.test(details)) {
         return "Il runtime Java incluso non e' compatibile con questa versione di Linux.";
     }
     if (result?.error?.code === "ENOENT") {
