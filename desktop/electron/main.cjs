@@ -32,6 +32,7 @@ let splashWindow = null;
 let backendPort = BACKEND_DEFAULT_PORT;
 let backendProcess = null;
 let latestStartupFailure = null;
+let startupFailureUserMessage = null;
 const rendererLogBuffer = [];
 const backendLogBuffer = [];
 const mainLogBuffer = [];
@@ -240,11 +241,7 @@ function waitForBackendPort(retries = 120, delay = 1000) {
     });
 }
 
-function getJavaExecutable() {
-    // In dev mode, assume 'java' is in PATH
-    if (isDev) return "java";
-
-    // In production, look for bundled JRE
+function getBundledJavaExecutable() {
     const jrePath = path.join(process.resourcesPath, "jre");
     const javaBin = process.platform === "win32" ? "bin/java.exe" : "bin/java";
     const bundledJava = path.join(jrePath, javaBin);
@@ -253,8 +250,59 @@ function getJavaExecutable() {
         return bundledJava;
     }
 
-    console.warn(`[Main] Bundled JRE not found at ${bundledJava}, falling back to system java`);
+    return null;
+}
+
+function getSystemJavaExecutable() {
     return process.platform === "win32" ? "java.exe" : "java";
+}
+
+function looksLikeNativeJavaRuntimeFailure(text) {
+    if (!text) return false;
+    return /GLIBC_[0-9.]+\s+not found/i.test(text)
+        || /error while loading shared libraries/i.test(text)
+        || /No such file or directory/i.test(text)
+        || /Exec format error/i.test(text)
+        || /cannot execute/i.test(text)
+        || /failed to start/i.test(text);
+}
+
+function summarizeRuntimeFailure(result) {
+    const details = (result?.output || result?.error?.message || "").trim();
+    if (/GLIBC_[0-9.]+\s+not found/i.test(details)) {
+        return "Il runtime Java incluso non e' compatibile con questa versione di Linux.";
+    }
+    if (result?.error?.code === "ENOENT") {
+        return result?.source === "system"
+            ? "Java di sistema non trovato nel PATH."
+            : "Runtime Java incluso non trovato nel pacchetto.";
+    }
+    if (/error while loading shared libraries/i.test(details)) {
+        return "Il runtime Java non riesce a caricare le librerie di sistema richieste.";
+    }
+    return "Il backend Java non e' riuscito ad avviarsi.";
+}
+
+function buildStartupFailureUserMessage(details = {}) {
+    const bundledFailed = details.bundledFailed;
+    const systemTried = details.systemTried;
+    const systemFailed = details.systemFailed;
+    const bundledSummary = details.bundledResult ? summarizeRuntimeFailure(details.bundledResult) : null;
+    const systemSummary = details.systemResult ? summarizeRuntimeFailure(details.systemResult) : null;
+
+    if (bundledFailed && systemTried && systemFailed) {
+        return `${bundledSummary || "Il runtime integrato non e' partito."} Ho provato anche con Java di sistema, ma non e' disponibile o non e' compatibile. Installa Java 21 oppure usa un pacchetto LibrePM compatibile con la tua distribuzione.`;
+    }
+
+    if (bundledFailed && systemTried && !systemFailed) {
+        return `${bundledSummary || "Il runtime integrato non e' partito."} LibrePM sta usando Java di sistema come workaround.`;
+    }
+
+    if (bundledFailed) {
+        return bundledSummary || "Il runtime Java incluso non e' riuscito a partire.";
+    }
+
+    return systemSummary || "Il backend non e' riuscito a partire.";
 }
 
 function getBackendJar() {
@@ -289,58 +337,73 @@ function startBackend() {
         });
     }
 
-    const javaExec = getJavaExecutable();
     const jarPath = getBackendJar();
-
     if (!jarPath) {
         console.error("[Main] Cannot start backend: JAR not found.");
-        return Promise.resolve();
+        startupFailureUserMessage = "LibrePM non trova il backend incluso nel pacchetto.";
+        return Promise.reject(new Error("Bundled backend JAR not found."));
     }
 
-    console.log(`[Main] Spawning backend: ${javaExec} -jar ${jarPath}`);
-    
-    // Ensure data directory exists
-    const dataPath = getLibrePMHome();
-    if (!fs.existsSync(dataPath)) {
-        fs.mkdirSync(dataPath, { recursive: true });
-    }
+    const bundledJava = getBundledJavaExecutable();
+    const systemJava = getSystemJavaExecutable();
+    const startupDetails = {
+        bundledFailed: false,
+        systemTried: false,
+        systemFailed: false,
+        bundledResult: null,
+        systemResult: null
+    };
 
-    // Delete old port file to ensure we read the new one
-    const portFile = getBackendPortFile();
-    if (fs.existsSync(portFile)) {
-        try { fs.unlinkSync(portFile); } catch(e) {}
-    }
+    return (async () => {
+        if (bundledJava) {
+            startupDetails.bundledResult = await tryStartBackendWithJava(bundledJava, "bundled", jarPath);
+            if (startupDetails.bundledResult.ok) {
+                if (startupDetails.bundledResult.port == null) {
+                    console.warn("[Main] Bundled Java started but backend port was not found yet.");
+                }
+                return;
+            }
 
-    backendProcess = spawn(javaExec, [
-        `-Dlibrepm.data.path=${dataPath}`,
-        "-jar", 
-        jarPath
-    ], {
-        cwd: path.dirname(jarPath),
-        detached: false,
-        stdio: 'pipe' // Capture stdout/stderr
-    });
+            startupDetails.bundledFailed = true;
+            appendLog(mainLogBuffer, "startup-warning", `Bundled Java failed: ${startupDetails.bundledResult.output || startupDetails.bundledResult.error?.message || startupDetails.bundledResult.code || "unknown error"}`);
+            console.warn("[Main] Bundled Java failed to start backend.");
 
-    backendProcess.stdout.on('data', (data) => {
-        appendLog(backendLogBuffer, "stdout", String(data).trim());
-        console.log(`[Backend] ${data}`);
-    });
+            if (!looksLikeNativeJavaRuntimeFailure(startupDetails.bundledResult.output || startupDetails.bundledResult.error?.message || "")) {
+                startupFailureUserMessage = buildStartupFailureUserMessage(startupDetails);
+                throw new Error(startupDetails.bundledResult.output || startupDetails.bundledResult.error?.message || "Bundled Java failed.");
+            }
 
-    backendProcess.stderr.on('data', (data) => {
-        appendLog(backendLogBuffer, "stderr", String(data).trim());
-        console.error(`[Backend] ${data}`);
-    });
+            updateSplashStatus("Runtime integrato non compatibile, provo Java di sistema...");
+        } else {
+            startupDetails.bundledFailed = true;
+            startupDetails.bundledResult = {
+                ok: false,
+                source: "bundled",
+                output: "",
+                error: new Error("Bundled Java not found")
+            };
+            appendLog(mainLogBuffer, "startup-warning", "Bundled Java not found. Falling back to system Java.");
+            updateSplashStatus("Runtime integrato non trovato, provo Java di sistema...");
+        }
 
-    backendProcess.on('close', (code) => {
-        appendLog(backendLogBuffer, "close", `Process exited with code ${code}`);
-        console.log(`[Backend] Process exited with code ${code}`);
-        backendProcess = null;
-    });
+        startupDetails.systemTried = true;
+        startupDetails.systemResult = await tryStartBackendWithJava(systemJava, "system", jarPath);
+        if (startupDetails.systemResult.ok) {
+            appendLog(mainLogBuffer, "startup-warning", "Using system Java as backend runtime fallback.");
+            if (startupDetails.systemResult.port == null) {
+                console.warn("[Main] System Java started but backend port was not found yet.");
+            }
+            return;
+        }
 
-    return waitForBackendPort().then(p => {
-        if (p) backendPort = p;
-        else console.warn("[Main] Failed to retrieve backend port after spawn.");
-    });
+        startupDetails.systemFailed = true;
+        startupFailureUserMessage = buildStartupFailureUserMessage(startupDetails);
+        throw new Error(
+            startupDetails.systemResult.output
+            || startupDetails.systemResult.error?.message
+            || "System Java fallback failed."
+        );
+    })();
 }
 
 function waitForBackendReady(port, retries = 480, delay = 20000) {
@@ -388,6 +451,128 @@ function stopBackend() {
         backendProcess.kill();
         backendProcess = null;
     }
+}
+
+function spawnBackendProcess(javaExec, source, jarPath) {
+    console.log(`[Main] Spawning backend (${source}): ${javaExec} -jar ${jarPath}`);
+
+    const dataPath = getLibrePMHome();
+    if (!fs.existsSync(dataPath)) {
+        fs.mkdirSync(dataPath, { recursive: true });
+    }
+
+    const portFile = getBackendPortFile();
+    if (fs.existsSync(portFile)) {
+        try {
+            fs.unlinkSync(portFile);
+        } catch (_) {
+            // ignore
+        }
+    }
+
+    const child = spawn(javaExec, [
+        `-Dlibrepm.data.path=${dataPath}`,
+        "-jar",
+        jarPath
+    ], {
+        cwd: path.dirname(jarPath),
+        detached: false,
+        stdio: "pipe"
+    });
+
+    backendProcess = child;
+
+    return child;
+}
+
+function attachBackendLogging(child, source, state) {
+    child.stdout.on("data", (data) => {
+        const text = String(data).trim();
+        if (!text) return;
+        state.output += `${text}\n`;
+        appendLog(backendLogBuffer, `stdout:${source}`, text);
+        console.log(`[Backend:${source}] ${text}`);
+    });
+
+    child.stderr.on("data", (data) => {
+        const text = String(data).trim();
+        if (!text) return;
+        state.output += `${text}\n`;
+        appendLog(backendLogBuffer, `stderr:${source}`, text);
+        console.error(`[Backend:${source}] ${text}`);
+    });
+
+    child.on("error", (error) => {
+        state.error = error;
+        if (backendProcess === child) {
+            backendProcess = null;
+        }
+    });
+
+    child.on("close", (code) => {
+        state.closed = true;
+        state.code = code;
+        appendLog(backendLogBuffer, `close:${source}`, `Process exited with code ${code}`);
+        console.log(`[Backend:${source}] Process exited with code ${code}`);
+        if (backendProcess === child) {
+            backendProcess = null;
+        }
+    });
+}
+
+async function tryStartBackendWithJava(javaExec, source, jarPath) {
+    const state = {
+        source,
+        output: "",
+        error: null,
+        closed: false,
+        code: null
+    };
+
+    let child;
+    try {
+        child = spawnBackendProcess(javaExec, source, jarPath);
+    } catch (error) {
+        state.error = error;
+        return {
+            ok: false,
+            source,
+            error,
+            output: state.output
+        };
+    }
+
+    attachBackendLogging(child, source, state);
+
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+
+    if (state.error || state.closed) {
+        return {
+            ok: false,
+            source,
+            error: state.error,
+            code: state.code,
+            output: state.output
+        };
+    }
+
+    const port = await waitForBackendPort();
+    if (port) {
+        backendPort = port;
+        return {
+            ok: true,
+            source,
+            port,
+            output: state.output
+        };
+    }
+
+    return {
+        ok: true,
+        source,
+        port: null,
+        output: state.output
+    };
 }
 
 // ----------------------------
@@ -544,8 +729,10 @@ function createWindow() {
 
 async function attemptStartup(isRetry = false) {
     try {
-        // 1. Spawn backend (only on first run; retries skip re-spawn)
-        if (!isRetry) {
+        startupFailureUserMessage = null;
+
+        // 1. Spawn backend. On retry, respawn it if the previous attempt failed.
+        if (!isRetry || !backendProcess) {
             updateSplashStatus("Avvio App in corso...");
             await startBackend();
         } else {
@@ -566,23 +753,24 @@ async function attemptStartup(isRetry = false) {
 
         if (ready) {
             latestStartupFailure = null;
+            startupFailureUserMessage = null;
             updateSplashStatus("Caricamento interfaccia...");
             createWindow();
         } else {
             latestStartupFailure = `Backend not ready on port ${backendPort} after ${retries} attempts`;
+            startupFailureUserMessage = "LibrePM non riesce ancora a contattare il backend locale. Riprova tra poco. Se il problema persiste, verifica il runtime Java o segnala il bug.";
             appendLog(mainLogBuffer, "startup-warning", latestStartupFailure);
             console.warn("[Main] Backend not ready after health-check loop");
-            showSplashWarning(
-                "WARNING - La App ci sta mettendo pi\u00F9 del dovuto ad avviarsi, riprovare manualmente tra un po'."
-            );
+            showSplashWarning(startupFailureUserMessage);
         }
     } catch (e) {
         latestStartupFailure = e?.stack || e?.message || String(e);
+        if (!startupFailureUserMessage) {
+            startupFailureUserMessage = "LibrePM non e' riuscito ad avviare il backend locale. Verifica Java di sistema o usa un pacchetto compatibile con la tua distribuzione.";
+        }
         appendLog(mainLogBuffer, "startup-error", latestStartupFailure);
         console.error("[Main] Startup error:", e);
-        showSplashWarning(
-            "WARNING - La App ci sta mettendo pi\u00F9 del dovuto ad avviarsi, riprovare manualmente tra un po'."
-        );
+        showSplashWarning(startupFailureUserMessage);
     }
 }
 
