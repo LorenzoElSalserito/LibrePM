@@ -155,8 +155,11 @@
         "deb"
       ],
       "desktop": {
+        "Name": "LibrePM",
         "Icon": "/usr/share/icons/hicolor/1080x1080/apps/librepm-desktop.png"
-      }
+      },
+      "synopsis": "European Project Government Platform",
+      "description": "LibrePM is a European project governance platform for project finance, grant management and operational planning — privacy-first, local-first, EU-oriented"
     }
   }
 }
