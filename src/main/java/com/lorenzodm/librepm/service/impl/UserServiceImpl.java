@@ -107,6 +107,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void resetPassword(String userId, String usernameConfirmation, String newPassword) {
+        User u = getById(userId);
+        if (usernameConfirmation == null || !u.getUsername().equalsIgnoreCase(usernameConfirmation.trim())) {
+            throw new ForbiddenException("Username confirmation is incorrect");
+        }
+        validateNewPassword(newPassword);
+        u.setPasswordHash(passwordService.hash(newPassword));
+        userRepository.save(u);
+    }
+
+    @Override
     public void removePassword(String userId, String currentPassword) {
         User u = getById(userId);
         if (u.getPasswordHash() != null && !u.getPasswordHash().isBlank()) {
@@ -116,5 +127,14 @@ public class UserServiceImpl implements UserService {
         }
         u.setPasswordHash("");
         userRepository.save(u);
+    }
+
+    private void validateNewPassword(String newPassword) {
+        if (newPassword == null || newPassword.length() < 8 || newPassword.length() > 100) {
+            throw new BadRequestException("New password must be between 8 and 100 characters");
+        }
+        if (!newPassword.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^a-zA-Z\\d]).+$")) {
+            throw new BadRequestException("New password must contain uppercase, lowercase, number and special character");
+        }
     }
 }

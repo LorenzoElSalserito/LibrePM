@@ -14,5 +14,6 @@ public interface UserService {
     User update(String userId, UpdateUserRequest req);
     User setActive(String userId, boolean active);
     void changePassword(String userId, String oldPassword, String newPassword);
+    void resetPassword(String userId, String usernameConfirmation, String newPassword);
     void removePassword(String userId, String currentPassword);
 }

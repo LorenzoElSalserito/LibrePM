@@ -1011,7 +1011,7 @@ ipcMain.handle("data:exportJsonDialog", async () => {
     try {
         const projects = await callBackend("GET", "/projects");
         const exportData = {
-            version: "0.5.2",
+            version: "0.1.1",
             exportedAt: new Date().toISOString(),
             projects: projects || [],
         };

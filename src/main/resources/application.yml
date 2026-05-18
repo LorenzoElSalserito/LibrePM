@@ -50,7 +50,7 @@ librepm:
   # Data path is injected via System Property in LibrePMApplication.java
   # librepm.data.path = user.home/.librepm (or similar)
   data:
-    path: ${librepm.data.path}
+    path: ${LIBREPM_DATA_PATH:${user.home}/.librepm}
 
   port:
     config-file: ${librepm.data.path}/config/backend.port

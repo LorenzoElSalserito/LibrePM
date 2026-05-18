@@ -1282,5 +1282,15 @@
   "module.executive_dashboard": "Dashboard Esecutiva",
   "module.portfolio": "Portfolio",
   "module.change_control": "Controllo Modifiche",
-  "module.compliance": "Conformità"
+  "module.compliance": "Conformità",
+  "Confirm new password": "Conferma nuova password",
+  "Confirm username": "Conferma username",
+  "Forgot password?": "Password dimenticata?",
+  "New password": "Nuova password",
+  "Reset password": "Ripristina password",
+  "Hide password": "Nascondi password",
+  "Show password": "Mostra password",
+  "Unable to reset password. Please try again.": "Impossibile ripristinare la password. Riprova.",
+  "Username confirmation does not match": "La conferma username non corrisponde",
+  "Username confirmation is required": "Conferma username obbligatoria"
 }

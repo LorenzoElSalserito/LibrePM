@@ -43,6 +43,13 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
     // Login state
     const [selectedUserId, setSelectedUserId] = useState(null);
     const [loginPassword, setLoginPassword] = useState("");
+    const [resetPasswordUserId, setResetPasswordUserId] = useState(null);
+    const [resetPasswordData, setResetPasswordData] = useState({
+        usernameConfirmation: "",
+        newPassword: "",
+        confirmPassword: "",
+    });
+    const [visiblePasswords, setVisiblePasswords] = useState({});
 
     // Preferenze
     const [autologinEnabled, setAutologinEnabled] = useState(
@@ -55,6 +62,50 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
 
     const hasProfiles = localUsers.length > 0;
     const lastUserId = bootstrapData?.preferences?.lastUserId;
+
+    const togglePasswordVisibility = (key) => {
+        setVisiblePasswords(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const renderPasswordInput = ({
+        id,
+        visibilityKey,
+        className = "form-control",
+        placeholder,
+        value,
+        onChange,
+        onKeyPress,
+        disabled,
+        autoFocus,
+        invalid,
+    }) => {
+        const visible = !!visiblePasswords[visibilityKey];
+        return (
+            <div className="input-group">
+                <input
+                    type={visible ? "text" : "password"}
+                    className={`${className} ${invalid ? "is-invalid" : ""}`}
+                    id={id}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                    onKeyPress={onKeyPress}
+                    disabled={disabled}
+                    autoFocus={autoFocus}
+                />
+                <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => togglePasswordVisibility(visibilityKey)}
+                    disabled={disabled}
+                    title={visible ? t("Hide password") : t("Show password")}
+                    aria-label={visible ? t("Hide password") : t("Show password")}
+                >
+                    <i className={`bi ${visible ? "bi-eye-slash" : "bi-eye"}`}></i>
+                </button>
+            </div>
+        );
+    };
 
     // ========================================
     // Effects
@@ -106,6 +157,54 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
         } catch (e) {
             console.error("[Onboarding] Login error:", e);
             setError(t("Invalid password. Please try again."));
+            setLoading(false);
+        }
+    };
+
+    const handleResetPassword = async (user) => {
+        const usernameConfirmation = resetPasswordData.usernameConfirmation.trim();
+        const newPassword = resetPasswordData.newPassword;
+
+        if (!usernameConfirmation) {
+            setError(t("Username confirmation is required"));
+            return;
+        }
+        if (usernameConfirmation.toLowerCase() !== user.username.toLowerCase()) {
+            setError(t("Username confirmation does not match"));
+            return;
+        }
+        if (newPassword.length < 8) {
+            setError(t("Password must be at least 8 characters"));
+            return;
+        }
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^a-zA-Z0-9])/.test(newPassword)) {
+            setError(t("Password must contain uppercase, lowercase, number and special char"));
+            return;
+        }
+        if (newPassword !== resetPasswordData.confirmPassword) {
+            setError(t("Passwords do not match"));
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            await librepm.usersResetPassword(user.id, usernameConfirmation, newPassword);
+            const loggedInUser = await librepm.bootstrapLogin(user.id, newPassword);
+
+            if (autologinEnabled) {
+                await librepm.bootstrapUpdatePreferences({
+                    lastUserId: user.id,
+                    autologinEnabled: true,
+                });
+                librepm.setLocalPreferences({ autologinEnabled: true, lastUserId: user.id });
+            }
+
+            onProfileSelected(loggedInUser);
+        } catch (e) {
+            console.error("[Onboarding] Password reset error:", e);
+            setError(e.message || t("Unable to reset password. Please try again."));
             setLoading(false);
         }
     };
@@ -361,7 +460,13 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                         onClick={() => {
                             if (selectedUserId === user.id) return;
                             setSelectedUserId(user.id);
+                            setResetPasswordUserId(null);
                             setLoginPassword("");
+                            setResetPasswordData({
+                                usernameConfirmation: "",
+                                newPassword: "",
+                                confirmPassword: "",
+                            });
                             setError(null);
                         }}
                         role="button"
@@ -408,31 +513,112 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
 
                         {selectedUserId === user.id && (
                             <div className="profile-login-form" onClick={e => e.stopPropagation()}>
-                                <input 
-                                    type="password" 
-                                    className="form-control form-control-sm mb-2" 
-                                    placeholder={t("Password")}
-                                    value={loginPassword}
-                                    onChange={e => setLoginPassword(e.target.value)}
-                                    onKeyPress={e => e.key === 'Enter' && handleLogin(user.id)}
-                                    autoFocus
-                                />
-                                <div className="d-flex gap-2">
-                                    <button 
-                                        className="btn btn-sm btn-primary flex-grow-1"
-                                        onClick={() => handleLogin(user.id)}
-                                        disabled={loading}
-                                    >
-                                        {loading ? <span className="spinner-border spinner-border-sm"></span> : t("Login")}
-                                    </button>
-                                    <button 
-                                        className="btn btn-sm btn-outline-secondary"
-                                        onClick={() => setSelectedUserId(null)}
-                                        disabled={loading}
-                                    >
-                                        {t("Cancel")}
-                                    </button>
-                                </div>
+                                {resetPasswordUserId === user.id ? (
+                                    <>
+                                        <input
+                                            type="text"
+                                            className="form-control form-control-sm mb-2"
+                                            placeholder={t("Confirm username")}
+                                            value={resetPasswordData.usernameConfirmation}
+                                            onChange={e => setResetPasswordData({
+                                                ...resetPasswordData,
+                                                usernameConfirmation: e.target.value,
+                                            })}
+                                            autoFocus
+                                        />
+                                        <div className="mb-2">
+                                            {renderPasswordInput({
+                                                visibilityKey: "reset-new",
+                                                className: "form-control form-control-sm",
+                                                placeholder: t("New password"),
+                                                value: resetPasswordData.newPassword,
+                                                onChange: e => setResetPasswordData({
+                                                    ...resetPasswordData,
+                                                    newPassword: e.target.value,
+                                                }),
+                                            })}
+                                        </div>
+                                        <div className="mb-2">
+                                            {renderPasswordInput({
+                                                visibilityKey: "reset-confirm",
+                                                className: "form-control form-control-sm",
+                                                placeholder: t("Confirm new password"),
+                                                value: resetPasswordData.confirmPassword,
+                                                onChange: e => setResetPasswordData({
+                                                    ...resetPasswordData,
+                                                    confirmPassword: e.target.value,
+                                                }),
+                                                onKeyPress: e => e.key === 'Enter' && handleResetPassword(user),
+                                            })}
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                            <button
+                                                className="btn btn-sm btn-primary flex-grow-1"
+                                                onClick={() => handleResetPassword(user)}
+                                                disabled={loading}
+                                            >
+                                                {loading ? <span className="spinner-border spinner-border-sm"></span> : t("Reset password")}
+                                            </button>
+                                            <button
+                                                className="btn btn-sm btn-outline-secondary"
+                                                onClick={() => {
+                                                    setResetPasswordUserId(null);
+                                                    setResetPasswordData({
+                                                        usernameConfirmation: "",
+                                                        newPassword: "",
+                                                        confirmPassword: "",
+                                                    });
+                                                    setError(null);
+                                                }}
+                                                disabled={loading}
+                                            >
+                                                {t("Cancel")}
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="mb-2">
+                                            {renderPasswordInput({
+                                                visibilityKey: "login",
+                                                className: "form-control form-control-sm",
+                                                placeholder: t("Password"),
+                                                value: loginPassword,
+                                                onChange: e => setLoginPassword(e.target.value),
+                                                onKeyPress: e => e.key === 'Enter' && handleLogin(user.id),
+                                                autoFocus: true,
+                                            })}
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                            <button
+                                                className="btn btn-sm btn-primary flex-grow-1"
+                                                onClick={() => handleLogin(user.id)}
+                                                disabled={loading}
+                                            >
+                                                {loading ? <span className="spinner-border spinner-border-sm"></span> : t("Login")}
+                                            </button>
+                                            <button
+                                                className="btn btn-sm btn-outline-secondary"
+                                                onClick={() => setSelectedUserId(null)}
+                                                disabled={loading}
+                                            >
+                                                {t("Cancel")}
+                                            </button>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="btn btn-sm btn-link px-0 mt-1"
+                                            onClick={() => {
+                                                setResetPasswordUserId(user.id);
+                                                setLoginPassword("");
+                                                setError(null);
+                                            }}
+                                            disabled={loading}
+                                        >
+                                            {t("Forgot password?")}
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
@@ -556,15 +742,15 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                     <label htmlFor="password" className="form-label">
                         {t("Password")} <span className="text-danger">*</span>
                     </label>
-                    <input
-                        type="password"
-                        className={`form-control ${formErrors.password ? "is-invalid" : ""}`}
-                        id="password"
-                        placeholder={t("Min. 8 chars, A-Z, a-z, 0-9, !@#")}
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        disabled={loading}
-                    />
+                    {renderPasswordInput({
+                        id: "password",
+                        visibilityKey: "create-password",
+                        placeholder: t("Min. 8 chars, A-Z, a-z, 0-9, !@#"),
+                        value: formData.password,
+                        onChange: (e) => setFormData({ ...formData, password: e.target.value }),
+                        disabled: loading,
+                        invalid: formErrors.password,
+                    })}
                     {formErrors.password && (
                         <div className="invalid-feedback">{formErrors.password}</div>
                     )}

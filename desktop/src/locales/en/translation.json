@@ -1256,5 +1256,15 @@
   "module.executive_dashboard": "Executive Dashboard",
   "module.portfolio": "Portfolio",
   "module.change_control": "Change Control",
-  "module.compliance": "Compliance"
+  "module.compliance": "Compliance",
+  "Confirm new password": "Confirm new password",
+  "Confirm username": "Confirm username",
+  "Forgot password?": "Forgot password?",
+  "New password": "New password",
+  "Reset password": "Reset password",
+  "Hide password": "Hide password",
+  "Show password": "Show password",
+  "Unable to reset password. Please try again.": "Unable to reset password. Please try again.",
+  "Username confirmation does not match": "Username confirmation does not match",
+  "Username confirmation is required": "Username confirmation is required"
 }

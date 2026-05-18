@@ -68,6 +68,14 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PutMapping("/{userId}/reset-password")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable String userId,
+            @RequestBody Map<String, String> body) {
+        userService.resetPassword(userId, body.get("usernameConfirmation"), body.get("newPassword"));
+        return ResponseEntity.ok().build();
+    }
+
     @PutMapping("/{userId}/remove-password")
     public ResponseEntity<Void> removePassword(
             @PathVariable String userId,

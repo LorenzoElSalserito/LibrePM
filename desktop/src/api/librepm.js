@@ -504,6 +504,14 @@ export const librepm = {
     }),
 
     /**
+     * Resets user password after local username confirmation.
+     */
+    usersResetPassword: (userId, usernameConfirmation, newPassword) => apiRequest(`/users/${userId}/reset-password`, {
+        method: 'PUT',
+        body: { usernameConfirmation, newPassword },
+    }),
+
+    /**
      * Removes user password (no-password mode).
      */
     usersRemovePassword: (userId, currentPassword) => apiRequest(`/users/${userId}/remove-password`, {

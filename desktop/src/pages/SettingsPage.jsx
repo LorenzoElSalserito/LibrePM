@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useModal } from "../hooks/useModal.js";
 import NotificationPreferencesPanel from "../components/NotificationPreferencesPanel.jsx";
 
+const DONATION_URL = "https://www.paypal.com/paypalme/lorenzodemarco92";
+
 /**
  * SettingsPage - Pagina impostazioni utente
  *
@@ -25,6 +27,7 @@ import NotificationPreferencesPanel from "../components/NotificationPreferencesP
 export default function SettingsPage({ shell }) {
     const { t, i18n } = useTranslation();
     const modal = useModal();
+    const currentUser = shell?.currentUser;
 
     // ========================================
     // State
@@ -44,6 +47,7 @@ export default function SettingsPage({ shell }) {
     const [saving, setSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
     const [icalUrl, setIcalUrl] = useState("");
+    const [visiblePasswords, setVisiblePasswords] = useState({});
 
     // Workspace Profiles
     const [wsProfiles, setWsProfiles] = useState([]);
@@ -122,6 +126,33 @@ export default function SettingsPage({ shell }) {
         if (key === "language") {
             i18n.changeLanguage(value);
         }
+    };
+
+    const togglePasswordVisibility = (key) => {
+        setVisiblePasswords(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const PasswordInput = ({ id, visibilityKey, placeholder, width }) => {
+        const visible = !!visiblePasswords[visibilityKey];
+        return (
+            <div className="input-group input-group-sm" style={width ? { width } : undefined}>
+                <input
+                    type={visible ? "text" : "password"}
+                    className="form-control"
+                    placeholder={placeholder}
+                    id={id}
+                />
+                <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={() => togglePasswordVisibility(visibilityKey)}
+                    title={visible ? t("Hide password") : t("Show password")}
+                    aria-label={visible ? t("Hide password") : t("Show password")}
+                >
+                    <i className={`bi ${visible ? "bi-eye-slash" : "bi-eye"}`}></i>
+                </button>
+            </div>
+        );
     };
 
     const applyThemePreview = (theme) => {
@@ -451,27 +482,24 @@ export default function SettingsPage({ shell }) {
                     <h6 className="mb-3">{t("Change Password")}</h6>
                     <div className="row g-2 mb-3">
                         <div className="col-md-4">
-                            <input
-                                type="password"
-                                className="form-control form-control-sm"
-                                placeholder={t("Current Password")}
+                            <PasswordInput
                                 id="sec-old-pw"
+                                visibilityKey="sec-old-pw"
+                                placeholder={t("Current Password")}
                             />
                         </div>
                         <div className="col-md-4">
-                            <input
-                                type="password"
-                                className="form-control form-control-sm"
-                                placeholder={t("New Password")}
+                            <PasswordInput
                                 id="sec-new-pw"
+                                visibilityKey="sec-new-pw"
+                                placeholder={t("New Password")}
                             />
                         </div>
                         <div className="col-md-4">
-                            <input
-                                type="password"
-                                className="form-control form-control-sm"
-                                placeholder={t("Confirm Password")}
+                            <PasswordInput
                                 id="sec-confirm-pw"
+                                visibilityKey="sec-confirm-pw"
+                                placeholder={t("Confirm Password")}
                             />
                         </div>
                     </div>
@@ -639,12 +667,11 @@ export default function SettingsPage({ shell }) {
                     <h6 className="mb-3"><i className="bi bi-shield-lock me-2"></i>{t("Encrypted Export")}</h6>
                     <div className="row g-2 align-items-end">
                         <div className="col-auto">
-                            <input
-                                type="password"
-                                className="form-control form-control-sm"
-                                placeholder={t("Passphrase")}
+                            <PasswordInput
                                 id="encryptPassphrase"
-                                style={{ width: 220 }}
+                                visibilityKey="encrypt-passphrase"
+                                placeholder={t("Passphrase")}
+                                width={220}
                             />
                         </div>
                         <div className="col-auto">
@@ -736,41 +763,53 @@ export default function SettingsPage({ shell }) {
             </div>
 
             {/* Info */}
-            <div className="card">
-                <div className="card-header">
-                    <i className="bi bi-info-circle me-2"></i>
-                    {t("Information")}
+            <div className="card mb-4">
+                <div className="card-header d-flex align-items-center justify-content-between gap-2">
+                    <div>
+                        <i className="bi bi-info-circle me-2"></i>
+                        {t("Information")}
+                    </div>
+                    <span className="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        v{__APP_VERSION__}
+                    </span>
                 </div>
                 <div className="card-body">
-                    <div className="row mb-1">
-                        <div className="col-sm-4 text-muted">{t("Version")}</div>
-                        <div className="col-sm-8">LibrePM v{__APP_VERSION__}</div>
-                    </div>
-                    <div className="row mb-1">
-                        <div className="col-sm-4 text-muted">{t("Copyright")}</div>
-                        <div className="col-sm-8">© Lorenzo DM 2026</div>
-                    </div>
-                    <div className="row mb-1">
-                        <div className="col-sm-4 text-muted">{t("License")}</div>
-                        <div className="col-sm-8">AGPLv3</div>
-                    </div>
-                    <div className="row mb-1">
-                        <div className="col-sm-4 text-muted">{t("Website")}</div>
-                        <div className="col-sm-8">
-                            <a href="https://www.lorenzodm.it" target="_blank" rel="noopener noreferrer">
+                    <div className="d-grid gap-2">
+                        <div className="d-flex justify-content-between gap-3">
+                            <span className="text-muted">{t("Version")}</span>
+                            <span className="fw-semibold text-end">LibrePM v{__APP_VERSION__}</span>
+                        </div>
+                        <div className="d-flex justify-content-between gap-3">
+                            <span className="text-muted">{t("Copyright")}</span>
+                            <span className="text-end">© Lorenzo DM 2026</span>
+                        </div>
+                        <div className="d-flex justify-content-between gap-3">
+                            <span className="text-muted">{t("License")}</span>
+                            <span className="text-end">AGPLv3</span>
+                        </div>
+                        <div className="d-flex justify-content-between gap-3">
+                            <span className="text-muted">{t("Website")}</span>
+                            <a className="text-end" href="https://www.lorenzodm.it" target="_blank" rel="noopener noreferrer">
                                 https://www.lorenzodm.it
                             </a>
                         </div>
-                    </div>
-                    <div className="row">
-                        <div className="col-sm-4 text-muted">{t("Support")}</div>
-                        <div className="col-sm-8">
-                            {t("If you like LibrePM, please consider supporting its development!")}
+                        <div className="d-flex justify-content-between gap-3">
+                            <span className="text-muted">{t("Support")}</span>
+                            <span className="text-end">{t("If you like LibrePM, please consider supporting its development!")}</span>
                         </div>
-                    </div>
-                    <div className="row mt-2">
-                        <div className="col-sm-4 text-muted">{t("Platform")}</div>
-                        <div className="col-sm-8">{librepm.isElectron() ? t("Desktop (Electron)") : t("Web")}</div>
+                        <div className="d-flex justify-content-between gap-3">
+                            <span className="text-muted">{t("Platform")}</span>
+                            <span className="text-end">{librepm.isElectron() ? t("Desktop (Electron)") : t("Web")}</span>
+                        </div>
+                        <a
+                            className="btn btn-outline-primary btn-sm align-self-start mt-2"
+                            href={DONATION_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <i className="bi bi-heart me-1"></i>
+                            {t("Donations")}
+                        </a>
                     </div>
                 </div>
             </div>

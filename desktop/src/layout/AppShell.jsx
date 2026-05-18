@@ -10,6 +10,7 @@ import TopHeader from "./TopHeader.jsx";
 import ProfileMenu from "./ProfileMenu.jsx";
 import CommandPalette from "../components/CommandPalette.jsx";
 import NotificationBell from "../components/NotificationBell.jsx";
+import PortalModal from "../components/PortalModal.jsx";
 
 // Pages
 import MenuPage from "../pages/MenuPage.jsx";
@@ -36,6 +37,58 @@ import GrantsPage from "../pages/GrantsPage.jsx";
 import StakeholderPage from "../pages/StakeholderPage.jsx";
 import ChangeControlPage from "../pages/ChangeControlPage.jsx";
 import PortfolioPage from "../pages/PortfolioPage.jsx";
+
+const DONATION_URL = "https://www.paypal.com/paypalme/lorenzodemarco92";
+
+function AboutLibrePMModal({ onClose, t }) {
+    return (
+        <PortalModal className="modal-dialog-centered modal-md" onClick={onClose}>
+            <div className="modal-header border-0 pb-0">
+                <div>
+                    <h5 className="modal-title d-flex align-items-center gap-2 mb-1">
+                        <span className="d-inline-flex align-items-center justify-content-center rounded-2 bg-primary-subtle text-primary" style={{ width: 36, height: 36 }}>
+                            <i className="bi bi-info-circle"></i>
+                        </span>
+                        LibrePM
+                    </h5>
+                    <div className="text-muted small">{t("Planner & Task Manager")}</div>
+                </div>
+                <button type="button" className="btn-close" aria-label={t("Close")} onClick={onClose}></button>
+            </div>
+            <div className="modal-body pt-3">
+                <div className="border rounded-2 p-3 mb-3">
+                    <div className="d-flex justify-content-between gap-3 mb-2">
+                        <span className="text-muted">{t("Version")}</span>
+                        <span className="fw-semibold">LibrePM v{__APP_VERSION__}</span>
+                    </div>
+                    <div className="d-flex justify-content-between gap-3 mb-2">
+                        <span className="text-muted">{t("Website")}</span>
+                        <a href="https://www.lorenzodm.it" target="_blank" rel="noopener noreferrer">
+                            https://www.lorenzodm.it
+                        </a>
+                    </div>
+                    <div className="d-flex justify-content-between gap-3 mb-2">
+                        <span className="text-muted">{t("Copyright")}</span>
+                        <span className="text-end">© Lorenzo DM 2026 - All Rights Reserved</span>
+                    </div>
+                    <div className="d-flex justify-content-between gap-3">
+                        <span className="text-muted">{t("License")}</span>
+                        <span className="text-end">Distributed under the LICENSE AGPLv3</span>
+                    </div>
+                </div>
+                <a
+                    className="btn btn-primary w-100"
+                    href={DONATION_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    <i className="bi bi-heart me-2"></i>
+                    {t("Donations")}
+                </a>
+            </div>
+        </PortalModal>
+    );
+}
 
 // Context
 import { WorkflowProvider } from "../context/WorkflowContext.jsx";
@@ -160,10 +213,10 @@ export default function AppShell({ initialUser, onLogout }) {
                 id: "about",
                 label: t("Info LibrePM"),
                 icon: "bi-info-circle",
-                onClick: async () => {
-                    await modal.confirm({
-                        title: "LibrePM",
-                        message: `LibrePM v${__APP_VERSION__}\n${t("Planner & Task Manager")}\n\nhttps://www.lorenzodm.it\n\n© Lorenzo DM 2026 - All Rights Reserved\n\nDistributed under the LICENSE AGPLv3`,
+                onClick: () => {
+                    modal.showModal(AboutLibrePMModal, {
+                        t,
+                        onClose: modal.hideModal,
                     });
                 },
             },
@@ -592,11 +645,17 @@ export default function AppShell({ initialUser, onLogout }) {
                             <aside className={"jl-rightpanel " + (rightPanelOpen ? "" : "closed")}>
                                 {rightPanel ?? (
                                     <div className="d-flex flex-column gap-2">
-                                        <div className="fw-bold">LibrePM v{__APP_VERSION__}</div>
-                                        <div className="jl-muted small">
-                                            {t("Info panel. Pages can customize this space.")}
+                                        <div className="d-flex align-items-start justify-content-between gap-2">
+                                            <div>
+                                                <div className="fw-bold">LibrePM v{__APP_VERSION__}</div>
+                                                <div className="jl-muted small">
+                                                    {t("Info panel. Pages can customize this space.")}
+                                                </div>
+                                            </div>
+                                            <span className="badge bg-primary-subtle text-primary border border-primary-subtle">
+                                                v{__APP_VERSION__}
+                                            </span>
                                         </div>
-
                                         {currentProject && (
                                             <div className="p-2 border rounded-3">
                                                 <div className="small fw-bold">{t("Active Project")}</div>
