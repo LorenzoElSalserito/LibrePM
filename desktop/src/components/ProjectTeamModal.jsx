@@ -74,7 +74,7 @@ export default function ProjectTeamModal({ project, onClose }) {
                 toast.success(t("Success"));
             } else {
                 if (!localName || !localUsername) return;
-                await librepm.projectMembersCreateGhost(project.id, localUsername, localName);
+                await librepm.projectMembersCreateGhost(project.id, localUsername, localName, selectedRole);
                 toast.success(t("Success"));
             }
             setActiveTab("list");
@@ -134,7 +134,7 @@ export default function ProjectTeamModal({ project, onClose }) {
                                     <div>
                                         <div className="fw-bold d-flex align-items-center gap-2">
                                             {m.user.displayName || m.user.username}
-                                            {m.user.isGhost ? (
+                                            {m.user.ghost ? (
                                                 <span className="badge bg-secondary-subtle text-secondary border border-secondary-subtle" style={{fontSize: '0.6rem'}}>{t("LOCAL")}</span>
                                             ) : (
                                                 <span className="badge bg-primary-subtle text-primary border border-primary-subtle" style={{fontSize: '0.6rem'}}>{t("LIBREPM")}</span>
@@ -214,13 +214,6 @@ export default function ProjectTeamModal({ project, onClose }) {
                                         {t("Selected:")} <strong>{selectedRealUser.displayName || selectedRealUser.username}</strong>
                                     </div>
                                 )}
-                                <div>
-                                    <label className="form-label">{t("Role")}</label>
-                                    <select className="form-select" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
-                                        <option value="EDITOR">{t("Editor")}</option>
-                                        <option value="VIEWER">{t("Viewer")}</option>
-                                    </select>
-                                </div>
                             </>
                         ) : (
                             <>
@@ -234,6 +227,14 @@ export default function ProjectTeamModal({ project, onClose }) {
                                 </div>
                             </>
                         )}
+
+                        <div>
+                            <label className="form-label">{t("Role")}</label>
+                            <select className="form-select" value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)}>
+                                <option value="EDITOR">{t("Editor")}</option>
+                                <option value="VIEWER">{t("Viewer")}</option>
+                            </select>
+                        </div>
 
                         <button
                             className="btn btn-primary mt-2"

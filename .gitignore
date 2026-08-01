@@ -1,5 +1,6 @@
 HELP.md
 .gradle
+.codex
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -54,4 +55,4 @@ local.properties
 
 ### Project Files ###
 PLAN.md
-LibrePM_PRD_v2.md
+LibrePM_PRD.md

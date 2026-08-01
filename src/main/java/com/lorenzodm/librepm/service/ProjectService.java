@@ -22,5 +22,5 @@ public interface ProjectService {
     void removeMember(String requesterId, String projectId, String userId);
     List<ProjectMember> getMembers(String requesterId, String projectId);
     User createGhostUser(String ownerId, String username, String displayName);
-    User createGhostUserAndAddToProject(String ownerId, String projectId, String username, String displayName);
+    User createGhostUserAndAddToProject(String ownerId, String projectId, String username, String displayName, ProjectMember.Role role);
 }

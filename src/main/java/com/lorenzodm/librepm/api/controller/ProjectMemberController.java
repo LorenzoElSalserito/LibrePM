@@ -4,6 +4,7 @@ import com.lorenzodm.librepm.api.dto.request.AddMemberRequest;
 import com.lorenzodm.librepm.api.dto.request.CreateGhostUserRequest;
 import com.lorenzodm.librepm.api.dto.response.ProjectMemberResponse;
 import com.lorenzodm.librepm.api.dto.response.UserResponse;
+import com.lorenzodm.librepm.api.exception.BadRequestException;
 import com.lorenzodm.librepm.api.mapper.UserMapper;
 import com.lorenzodm.librepm.core.entity.ProjectMember;
 import com.lorenzodm.librepm.core.entity.Role;
@@ -59,7 +60,7 @@ public class ProjectMemberController {
             @PathVariable String userId,
             @PathVariable String projectId,
             @Valid @RequestBody AddMemberRequest req) {
-        ProjectMember member = projectService.addMember(userId, projectId, req.userId(), ProjectMember.Role.valueOf(req.role()));
+        ProjectMember member = projectService.addMember(userId, projectId, req.userId(), parseRole(req.role()));
         return ResponseEntity.ok(toResponse(member, Map.of()));
     }
 
@@ -71,12 +72,13 @@ public class ProjectMemberController {
             @RequestBody Map<String, String> body) {
         String role = body.get("role");
         String systemRoleId = body.get("systemRoleId");
+        if (role != null) {
+            role = parseRole(role).name();
+        }
         ProjectMember member = projectService.updateMemberRole(userId, projectId, memberId, role, systemRoleId);
 
         Map<String, String> roleNames = Map.of();
         if (member.getSystemRoleId() != null) {
-            roleRepository.findById(member.getSystemRoleId())
-                    .ifPresent(r -> {});
             roleNames = roleRepository.findById(member.getSystemRoleId())
                     .map(r -> Map.of(r.getId(), r.getName()))
                     .orElse(Map.of());
@@ -98,8 +100,20 @@ public class ProjectMemberController {
             @PathVariable String userId,
             @PathVariable String projectId,
             @Valid @RequestBody CreateGhostUserRequest req) {
-        User ghost = projectService.createGhostUserAndAddToProject(userId, projectId, req.username(), req.displayName());
+        User ghost = projectService.createGhostUserAndAddToProject(userId, projectId, req.username(), req.displayName(), parseRoleOrDefault(req.role()));
         return ResponseEntity.ok(userMapper.toResponseLight(ghost));
+    }
+
+    private ProjectMember.Role parseRoleOrDefault(String role) {
+        return role == null || role.isBlank() ? ProjectMember.Role.EDITOR : parseRole(role);
+    }
+
+    private ProjectMember.Role parseRole(String role) {
+        try {
+            return ProjectMember.Role.valueOf(role);
+        } catch (IllegalArgumentException | NullPointerException ex) {
+            throw new BadRequestException("Ruolo progetto non valido: " + role);
+        }
     }
 
     private ProjectMemberResponse toResponse(ProjectMember m, Map<String, String> roleNames) {

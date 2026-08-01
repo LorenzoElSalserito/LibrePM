@@ -268,9 +268,9 @@ public class ProjectServiceImpl implements ProjectService {
     }
     
     @Override
-    public User createGhostUserAndAddToProject(String ownerId, String projectId, String username, String displayName) {
+    public User createGhostUserAndAddToProject(String ownerId, String projectId, String username, String displayName, ProjectMember.Role role) {
         User ghost = createGhostUser(ownerId, username, displayName);
-        addMember(ownerId, projectId, ghost.getId(), ProjectMember.Role.EDITOR); // Default role
+        addMember(ownerId, projectId, ghost.getId(), role != null ? role : ProjectMember.Role.EDITOR);
         return ghost;
     }
 

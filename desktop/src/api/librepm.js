@@ -1472,11 +1472,11 @@ export const librepm = {
     /**
      * Creates a Ghost user for the project.
      */
-    projectMembersCreateGhost: (projectId, username, displayName) => {
+    projectMembersCreateGhost: (projectId, username, displayName, role = 'EDITOR') => {
         const basePath = getUserBasePath();
         return apiRequest(`${basePath}/projects/${projectId}/members/ghosts`, {
             method: 'POST',
-            body: { username, displayName },
+            body: { username, displayName, role },
         });
     },
 
