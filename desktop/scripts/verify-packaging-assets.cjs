@@ -6,11 +6,12 @@ const pkg = meta.readJson(meta.paths.packageJson);
 const lock = meta.readJson(meta.paths.packageLock);
 const gradle = fs.readFileSync(meta.paths.buildGradle, "utf8");
 const problems = [];
+const javaExecutable = process.platform === "win32" ? "build-resources/jre/bin/java.exe" : "build-resources/jre/bin/java";
 const required = [
   "dist/index.html",
   "electron/main.cjs",
   "electron/preload.cjs",
-  "build-resources/jre/bin/java",
+  javaExecutable,
   "build-resources/backend/backend.jar",
   "src/assets/icon.png",
   "src/assets/icon.ico",

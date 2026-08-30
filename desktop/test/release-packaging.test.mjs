@@ -52,6 +52,13 @@ test("MariaDB è configurabile solo lato amministratore e UI resta disabilitata"
   assert.match(settings, /btn btn-secondary btn-sm" disabled aria-disabled="true"/);
 });
 
+test("verifica packaging usa eseguibile Java corretto su Windows", () => {
+  const verifier = fs.readFileSync(path.join(desktopDir, "scripts/verify-packaging-assets.cjs"), "utf8");
+  assert.match(verifier, /process\.platform === "win32"/);
+  assert.match(verifier, /build-resources\/jre\/bin\/java\.exe/);
+  assert.match(verifier, /build-resources\/jre\/bin\/java"/);
+});
+
 test("finalizzazione .deb produce metadati LibrePM conformi", { skip: !(has("dpkg-deb") && has("md5sum") && canUseFakeroot()) }, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "librepm-deb-test-"));
   try {
