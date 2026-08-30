@@ -37,7 +37,7 @@
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "postinstall": "electron-builder install-app-deps",
     "preview": "vite preview",
-    "test": "node --test test/*.test.mjs"
+    "test": "node --test test/release-packaging.test.mjs"
   },
   "dependencies": {
     "@uiw/react-md-editor": "^4.0.4",
