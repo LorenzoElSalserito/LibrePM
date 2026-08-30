@@ -39,15 +39,15 @@ Questa sezione è disponibile anche nella pagina Integrazioni (Capitolo 12):
 
 ## 🗄️ Database Esterno
 
-> **📌 Prossimamente:** Questa sezione è attualmente un segnaposto per funzionalità future.
+> **Configurazione amministratore:** Il supporto MariaDB è disponibile tramite
+> variabili d'ambiente del backend. I controlli desktop restano intenzionalmente disabilitati.
 
-Quando disponibile, permetterà di connettersi a database esterni:
+Le modalità di distribuzione disponibili sono mostrate per chiarezza:
 *   Selettore **Tipo Database** (attualmente disabilitato):
     *   SQLite (Locale) — predefinito corrente.
-    *   PostgreSQL (Prossimamente).
-    *   MySQL (Prossimamente).
+    *   MariaDB (Esterno, configurazione amministratore).
 *   Input **Host** (attualmente disabilitato).
-*   Pulsante **"Connetti a DB Esterno"** (attualmente disabilitato).
+*   Pulsante **"Connetti a DB Esterno"** (disabilitato; la configurazione appartiene all'ambiente server).
 
 Un avviso info mostra: *"Stai attualmente usando il database SQLite locale."*
 

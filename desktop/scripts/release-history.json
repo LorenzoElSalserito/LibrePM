@@ -1,0 +1,36 @@
+{
+  "releases": [
+    {
+      "version": "0.1.6",
+      "date": "Sun, 30 Aug 2026 17:27:09 +0200",
+      "distribution": "unstable",
+      "urgency": "medium",
+      "maintainer": "Lorenzo DM <commercial.lorenzodm@gmail.com>",
+      "entries": [
+        "Maintenance release."
+      ]
+    },
+    {
+      "version": "0.1.5",
+      "date": "Sun, 30 Aug 2026 17:26:06 +0200",
+      "distribution": "unstable",
+      "urgency": "medium",
+      "maintainer": "Lorenzo DM <commercial.lorenzodm@gmail.com>",
+      "entries": [
+        "Added: In preparazione: possibilità di connessione remota tramite MariaDB, con creazione automatica dello schema e migrazione amministrativa dal database SQLite locale. La funzione non è ancora integrata nell'interfaccia desktop e il relativo pulsante resta disabilitato.",
+        "Changed: Pipeline desktop allineata alla build versionata e conforme di AssociaGo.",
+        "Changed: Identità tecnica del pacchetto uniformata a `librepm`, senza suffisso `-desktop`."
+      ]
+    },
+    {
+      "version": "0.1.2",
+      "date": "Sat, 01 Aug 2026 22:22:31 +0200",
+      "distribution": "unstable",
+      "urgency": "medium",
+      "maintainer": "Lorenzo DM <commercial.lorenzodm@gmail.com>",
+      "entries": [
+        "Prima release LibrePM gestita dalla pipeline di packaging conforme."
+      ]
+    }
+  ]
+}

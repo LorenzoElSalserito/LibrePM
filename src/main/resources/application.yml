@@ -100,6 +100,38 @@ logging:
 
 ---
 # ============================================
+# Profile: MariaDB (external collaborative database)
+# Activate with SPRING_PROFILES_ACTIVE=mariadb and provide all required
+# LIBREPM_DB_* variables. SQLite remains the safe default profile.
+# ============================================
+spring:
+  config:
+    activate:
+      on-profile: mariadb
+  datasource:
+    url: jdbc:mariadb://${LIBREPM_DB_HOST}:${LIBREPM_DB_PORT:3306}/${LIBREPM_DB_NAME}?createDatabaseIfNotExist=true
+    username: ${LIBREPM_DB_USERNAME}
+    password: ${LIBREPM_DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.MariaDBDialect
+  flyway:
+    # Existing SQLite migrations contain SQLite-specific SQL. MariaDB schemas
+    # must therefore be provisioned by an administrator before connection.
+    enabled: false
+
+librepm:
+  mode: web
+  remote-migration:
+    enabled: ${LIBREPM_REMOTE_MIGRATION_ENABLED:false}
+    source: ${LIBREPM_REMOTE_MIGRATION_SOURCE:${librepm.data.path}/librepm.db}
+
+server:
+  address: ${LIBREPM_SERVER_ADDRESS:127.0.0.1}
+  port: ${LIBREPM_SERVER_PORT:8080}
+
+---
+# ============================================
 # Profile: Development (standalone)
 # ============================================
 spring:

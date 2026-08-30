@@ -598,7 +598,7 @@ export default function SettingsPage({ shell }) {
                 </div>
             </div>
 
-            {/* Database Esterno (Placeholder UI) */}
+            {/* External database support is configured by administrators through environment variables. */}
             <div className="card mb-4">
                 <div className="card-header">
                     <i className="bi bi-database me-2"></i>
@@ -614,8 +614,7 @@ export default function SettingsPage({ shell }) {
                             <label className="form-label">{t("Database Type")}</label>
                             <select className="form-select" disabled>
                                 <option>{t("SQLite (Local)")}</option>
-                                <option>{t("PostgreSQL (Coming Soon)")}</option>
-                                <option>{t("MySQL (Coming Soon)")}</option>
+                                <option>{t("MariaDB (External, administrator configuration)")}</option>
                             </select>
                         </div>
                         <div className="col-md-6">
@@ -623,7 +622,7 @@ export default function SettingsPage({ shell }) {
                             <input type="text" className="form-control" placeholder="localhost" disabled />
                         </div>
                         <div className="col-12">
-                            <button className="btn btn-primary btn-sm" disabled>
+                            <button className="btn btn-secondary btn-sm" disabled aria-disabled="true">
                                 {t("Connect to External DB")}
                             </button>
                         </div>

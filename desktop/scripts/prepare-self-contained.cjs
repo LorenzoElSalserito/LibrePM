@@ -51,7 +51,9 @@ if (backendJars.length > 1) {
 fs.rmSync(stagingDir, { recursive: true, force: true });
 fs.mkdirSync(stagedBackendDir, { recursive: true });
 
-fs.cpSync(jreDir, stagedJreDir, { recursive: true });
+// Dereference jlink's absolute legal-file symlinks. Absolute build-host links
+// are broken after installation and would make bundled JRE notices unreadable.
+fs.cpSync(jreDir, stagedJreDir, { recursive: true, dereference: true });
 fs.copyFileSync(backendJars[0].absolutePath, stagedBackendJar);
 
 console.log(`[prepare-self-contained] Staged JRE from ${jreDir}`);

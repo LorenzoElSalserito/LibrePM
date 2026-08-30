@@ -139,6 +139,9 @@ npm run dist
 ```
 
 This builds the backend JAR, the frontend, and packages everything into a distributable AppImage/DMG.
+Release artifacts use the `librepm_vX.Y.Z` naming scheme. `desktop/package.json`
+is the version source of truth; the release pipeline synchronizes Gradle,
+`package-lock.json`, changelog metadata, and Debian package metadata.
 
 ### Development Mode
 
@@ -158,6 +161,38 @@ The application is configured via `application.yml`:
 - `librepm.data.path` — root directory for database and asset storage
 - `librepm.assets.allowed-extensions` — whitelist of file types allowed for upload
 - `spring.profiles.active` — execution mode (`desktop`, `web`, `production`)
+
+### External MariaDB
+
+LibrePM can connect to an administrator-provisioned MariaDB database for a
+shared deployment. The desktop settings control remains disabled: credentials
+must not be stored from the renderer UI and must be supplied by the deployment
+environment.
+
+```bash
+SPRING_PROFILES_ACTIVE=mariadb \
+LIBREPM_DB_HOST=db.example.net \
+LIBREPM_DB_PORT=3306 \
+LIBREPM_DB_NAME=librepm \
+LIBREPM_DB_USERNAME=librepm \
+LIBREPM_DB_PASSWORD='replace-me' \
+LIBREPM_REMOTE_MIGRATION_ENABLED=true \
+LIBREPM_REMOTE_MIGRATION_SOURCE=/path/to/local/librepm.db \
+LIBREPM_SERVER_ADDRESS=0.0.0.0 \
+LIBREPM_SERVER_PORT=8080 \
+java -jar build/libs/LibrePM-0.1.2.jar
+```
+
+At first migration the target database and its schema are created automatically
+from the SQLite source, then every row, index, uniqueness constraint, primary
+key, and foreign key is copied and verified. The operation always refuses a
+non-empty target and never modifies the local source. A failed migration cleans
+up its partial target schema. Keep migration disabled on normal starts.
+
+The profile disables Flyway because current migrations contain SQLite-specific
+SQL. Network exposure also requires TLS, firewall rules, and authentication
+configured by the operator. Desktop UI integration is not released yet; its
+connection button remains disabled.
 
 ## License
 

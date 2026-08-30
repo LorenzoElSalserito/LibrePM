@@ -39,15 +39,15 @@ This section is also available on the Integrations page (Chapter 12):
 
 ## 🗄️ External Database
 
-> **📌 Coming Soon:** This section is currently a placeholder for future functionality.
+> **Administrator configuration:** MariaDB support is available through backend
+> environment variables. Desktop controls remain intentionally disabled.
 
-When available, it will let you connect to external databases:
+Available deployment modes are shown here for clarity:
 *   **Database Type** selector (currently disabled):
     *   SQLite (Local) — current default.
-    *   PostgreSQL (Coming Soon).
-    *   MySQL (Coming Soon).
+    *   MariaDB (External, administrator configuration).
 *   **Host** input (currently disabled).
-*   **"Connect to External DB"** button (currently disabled).
+*   **"Connect to External DB"** button (disabled; configuration belongs to the server environment).
 
 An info alert shows: *"You are currently using the local SQLite database."*
 

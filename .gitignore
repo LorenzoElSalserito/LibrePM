@@ -1,6 +1,8 @@
 HELP.md
 .gradle
+.gradle-local/
 .codex
+.agents
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -44,6 +46,7 @@ desktop/node_modules/
 desktop/backend-libs/
 desktop/jre/
 desktop/*.local
+desktop/scripts/.release-pending.json
 
 ### OS Generated ###
 .DS_Store

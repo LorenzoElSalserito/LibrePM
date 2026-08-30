@@ -77,8 +77,15 @@ jobs:
 
       - name: Install Dependencies
         working-directory: ./desktop
-        shell: bash
-        run: rm -rf node_modules package-lock.json && npm install
+        run: npm ci
+
+      - name: Install Debian packaging tools
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot dpkg-dev findutils
+
+      - name: Verify release infrastructure
+        working-directory: ./desktop
+        run: npm test
 
       - name: Build & Package Electron App
         working-directory: ./desktop
@@ -86,7 +93,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
-        run: npm run prepare:desktop && npx electron-builder --${{ matrix.target }} --publish never
+          LIBREPM_NO_BUMP: "1"
+        run: npm run build:${{ matrix.target }} -- --publish never
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
