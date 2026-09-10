@@ -31,6 +31,18 @@ test("identità e versioni restano coerenti", () => {
   assert.match(fs.readFileSync(meta.paths.buildGradle, "utf8"), new RegExp(`^version = '${pkg.version.replace(/\./g, "\\.")}'$`, "m"));
 });
 
+test("i pacchetti Linux sostituiscono il vecchio nome librepm-desktop", () => {
+  const pkg = meta.readJson(meta.paths.packageJson);
+  assert.deepEqual(pkg.build.rpm.fpm, ["--replaces", "librepm-desktop < 0.1.6"]);
+  const control = finalize.control([
+    "Package: LibrePM", `Version: ${meta.currentVersion()}`, "Architecture: amd64",
+    "Maintainer: Lorenzo DM <commercial.lorenzodm@gmail.com>", "Description: test", ""
+  ].join("\n"));
+  assert.match(control, /^Conflicts: librepm-desktop$/m);
+  assert.match(control, /^Replaces: librepm-desktop$/m);
+  assert.match(control, /^Provides: librepm-desktop$/m);
+});
+
 test("version:show non modifica file", () => {
   const watched = [meta.paths.packageJson, meta.paths.packageLock, meta.paths.buildGradle, meta.paths.changelog, meta.paths.history];
   const before = watched.map((file) => fs.readFileSync(file));
@@ -50,6 +62,12 @@ test("MariaDB è configurabile solo lato amministratore e UI resta disabilitata"
   assert.match(yaml, /password: \$\{LIBREPM_DB_PASSWORD\}/);
   assert.match(settings, /MariaDB \(External, administrator configuration\)/);
   assert.match(settings, /btn btn-secondary btn-sm" disabled aria-disabled="true"/);
+});
+
+test("verifica packaging blocca la toolchain RPM non idonea", () => {
+  const verifier = fs.readFileSync(path.join(desktopDir, "scripts/verify-packaging-assets.cjs"), "utf8");
+  assert.match(verifier, /USE_SYSTEM_FPM/);
+  assert.match(verifier, /rpmbuild non è disponibile/);
 });
 
 test("verifica packaging usa eseguibile Java corretto su Windows", () => {
@@ -80,6 +98,9 @@ test("finalizzazione .deb produce metadati LibrePM conformi", { skip: !(has("dpk
     const listing = execFileSync("dpkg-deb", ["-c", deb], { encoding: "utf8" });
     assert.match(info, /^Package: librepm$/m);
     assert.match(info, /^Section: misc$/m);
+    assert.match(info, /^Conflicts: librepm-desktop$/m);
+    assert.match(info, /^Replaces: librepm-desktop$/m);
+    assert.match(info, /^Provides: librepm-desktop$/m);
     assert.doesNotMatch(info, /^(License|Vendor):/m);
     assert.match(listing, /usr\/share\/doc\/librepm\/changelog\.gz/);
     assert.match(listing, /usr\/share\/doc\/librepm\/copyright/);

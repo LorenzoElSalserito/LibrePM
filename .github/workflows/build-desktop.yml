@@ -79,9 +79,12 @@ jobs:
         working-directory: ./desktop
         run: npm ci
 
-      - name: Install Debian packaging tools
+      - name: Install Linux packaging tools
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y fakeroot dpkg-dev findutils
+        run: |
+          sudo apt-get update && sudo apt-get install -y fakeroot dpkg-dev findutils rpm
+          sudo gem install --no-document fpm
+          fpm --version
 
       - name: Verify release infrastructure
         working-directory: ./desktop
@@ -94,6 +97,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
           LIBREPM_NO_BUMP: "1"
+          # La fpm inclusa in electron-builder non supporta rpm >= 4.20
+          USE_SYSTEM_FPM: ${{ runner.os == 'Linux' && 'true' || '' }}
         run: npm run build:${{ matrix.target }} -- --publish never
 
       - name: Upload Desktop Artifacts
@@ -103,6 +108,7 @@ jobs:
           path: |
             desktop/dist-electron/*.AppImage
             desktop/dist-electron/*.deb
+            desktop/dist-electron/*.rpm
             desktop/dist-electron/*.snap
             desktop/dist-electron/*.exe
             desktop/dist-electron/*.zip

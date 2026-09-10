@@ -8,6 +8,12 @@ release le consolida nella nuova versione e nel changelog Debian.
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-09-10
+
+- Fixed: Aggiornamento pulito dai pacchetti `librepm-desktop` 0.1.2: il pacchetto RPM dichiara `Obsoletes: librepm-desktop < 0.1.6` e il pacchetto DEB dichiara `Conflicts`/`Replaces`/`Provides` sul vecchio nome, eliminando il conflitto sui file di `/opt/LibrePM`.
+- Added: Il pacchetto RPM è prodotto dalla pipeline ufficiale (`npm run dist`) e pubblicato tra gli artefatti di release.
+- Changed: La build del target RPM usa una fpm di sistema (`USE_SYSTEM_FPM=true`), necessaria con rpm >= 4.20; `verify:packaging` blocca subito la build se la toolchain non è idonea.
+
 ## [0.1.6] - 2026-08-30
 
 - Maintenance release.

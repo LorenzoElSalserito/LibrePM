@@ -138,10 +138,22 @@ npm install
 npm run dist
 ```
 
-This builds the backend JAR, the frontend, and packages everything into a distributable AppImage/DMG.
+This builds the backend JAR, the frontend, and packages everything into distributable
+artifacts (Linux: AppImage, snap, deb, rpm; Windows: NSIS installer; macOS: DMG).
 Release artifacts use the `librepm_vX.Y.Z` naming scheme. `desktop/package.json`
 is the version source of truth; the release pipeline synchronizes Gradle,
 `package-lock.json`, changelog metadata, and Debian package metadata.
+
+On Linux the `rpm` target needs `rpmbuild` (`apt-get install rpm`). Distributions
+shipping rpm 4.20 or newer (Debian 13, Fedora 41+) are incompatible with the fpm
+version bundled in electron-builder, so a system fpm >= 1.15 must be used:
+
+```bash
+USE_SYSTEM_FPM=true npm run dist        # with fpm >= 1.15 available in PATH
+```
+
+`npm run verify:packaging` fails early with an explicit message when this toolchain
+requirement is not met.
 
 ### Development Mode
 

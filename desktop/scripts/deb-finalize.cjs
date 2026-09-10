@@ -9,6 +9,10 @@ const meta = require("./lib/release-meta.cjs");
 
 const PKG_NAME = "librepm";
 const SECTION = "misc";
+// Il pacchetto si chiamava "librepm-desktop" fino alla 0.1.2 e installa gli stessi file in
+// /opt/LibrePM: Conflicts/Replaces/Provides permettono ad apt di rimuovere il vecchio nome
+// durante l'aggiornamento invece di fallire sulla sovrascrittura dei file (Policy 7.6.2).
+const LEGACY_PKG_NAME = "librepm-desktop";
 const pkg = meta.readJson(meta.paths.packageJson);
 
 function run(command, args, options = {}) {
@@ -52,8 +56,11 @@ function control(raw) {
   fields.set("Version", pkg.version);
   fields.set("Section", SECTION);
   fields.set("Priority", "optional");
+  fields.set("Conflicts", LEGACY_PKG_NAME);
+  fields.set("Replaces", LEGACY_PKG_NAME);
+  fields.set("Provides", LEGACY_PKG_NAME);
   fields.set("Description", "LibrePM project governance platform\n LibrePM manages projects, grants, finance, planning and team collaboration.\n .\n Data remains local by default; an external MariaDB profile is available for collaborative deployments.");
-  const order = ["Package", "Version", "Section", "Priority", "Architecture", "Depends", "Recommends", "Suggests", "Maintainer", "Homepage", "Installed-Size", "Description"];
+  const order = ["Package", "Version", "Section", "Priority", "Architecture", "Depends", "Recommends", "Suggests", "Conflicts", "Replaces", "Provides", "Maintainer", "Homepage", "Installed-Size", "Description"];
   return `${order.filter((name) => fields.has(name)).map((name) => `${name}: ${fields.get(name)}`).join("\n")}\n`;
 }
 
@@ -135,4 +142,4 @@ if (require.main === module) {
     finalize(path.resolve(process.argv[2]));
   } catch (error) { console.error(`[deb-finalize] ${error.message}`); process.exit(1); }
 }
-module.exports = { finalize, control, PKG_NAME, SECTION };
+module.exports = { finalize, control, PKG_NAME, SECTION, LEGACY_PKG_NAME };

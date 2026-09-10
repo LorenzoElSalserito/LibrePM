@@ -1,6 +1,6 @@
 {
   "name": "librepm",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "LibrePM - European Project Governance Platform",
   "license": "AGPL-3.0-only",
   "author": {
@@ -172,7 +172,8 @@
       "target": [
         "AppImage",
         "snap",
-        "deb"
+        "deb",
+        "rpm"
       ],
       "desktop": {
         "Name": "LibrePM",
@@ -185,6 +186,13 @@
     "deb": {
       "packageCategory": "misc",
       "priority": "optional"
+    },
+    "rpm": {
+      "packageCategory": "Applications/Productivity",
+      "fpm": [
+        "--replaces",
+        "librepm-desktop < 0.1.6"
+      ]
     },
     "snap": {
       "summary": "European project governance platform"
