@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { toast } from "react-toastify";
 import { librepm } from "@api/librepm.js";
 import { useTranslation } from "react-i18next";
-import { useWorkflow } from "../context/WorkflowContext.jsx";
 
 /**
  * InboxPage — Personal inbox for quick task capture (PRD-01-FR-004).
@@ -14,9 +13,8 @@ import { useWorkflow } from "../context/WorkflowContext.jsx";
  * @author Lorenzo DM
  * @since 0.10.0
  */
-export default function InboxPage({ onNavigate }) {
+export default function InboxPage() {
     const { t } = useTranslation();
-    const { statuses, priorities } = useWorkflow();
 
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);

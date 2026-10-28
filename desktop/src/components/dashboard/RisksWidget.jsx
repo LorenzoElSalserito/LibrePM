@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { toast } from 'react-toastify';
 
 const SeverityBadge = ({ level }) => {
     const map = {

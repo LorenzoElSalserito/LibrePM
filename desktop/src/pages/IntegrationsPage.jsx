@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { librepm } from '@api/librepm.js';
 import { toast } from 'react-toastify';
 import { useModal } from '../hooks/useModal.js';
+import { useDataTransfer } from '../hooks/useDataTransfer.js';
+import { TransferStatus, TransferLabel } from '../components/DataTransferStatus.jsx';
 
 /**
  * IntegrationsPage - Manage Import/Export and external connections like ICS.
@@ -10,6 +12,8 @@ import { useModal } from '../hooks/useModal.js';
 export default function IntegrationsPage({ shell }) {
     const { t } = useTranslation();
     const modal = useModal();
+    const transfer = useDataTransfer();
+    const currentProject = shell?.currentProject || null;
     const [icsToken, setIcsToken] = useState('');
     const [loadingToken, setLoadingToken] = useState(true);
     const [mappingProfiles, setMappingProfiles] = useState([]);
@@ -70,60 +74,6 @@ export default function IntegrationsPage({ shell }) {
         }
     };
 
-    const handleExport = async (format) => {
-        try {
-            if (format === 'csv' && !shell.currentProject) {
-                toast.warn(t("Please select a project to export as CSV."));
-                return;
-            }
-            
-            if (librepm.isElectron()) {
-                if (format === 'json') await librepm.exportJsonDialog();
-                if (format === 'csv') await librepm.exportCsvDialog(shell.currentProject.id);
-            } else {
-                // Web fallback
-                const blob = await librepm.exportDatabase(format === 'json' ? 'json' : 'db');
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `librepm-backup-${new Date().toISOString().split('T')[0]}.${format === 'json' ? 'json' : 'zip'}`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-        } catch (e) {
-            toast.error(`${t("Export failed")}: ${e.message}`);
-        }
-    };
-
-    const handleImport = async () => {
-        const confirmed = await modal.confirm({ title: t("Warning: Importing will overwrite existing data. Continue?") });
-        if (!confirmed) return;
-        
-        if (librepm.isElectron()) {
-            await librepm.importJsonDialog();
-        } else {
-            // Basic web file input for import
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = ".json,.zip";
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    try {
-                        await librepm.importDatabase(file);
-                        toast.success(t("Import successful! Restarting..."));
-                        setTimeout(() => window.location.reload(), 2000);
-                    } catch (err) {
-                        toast.error(`${t("Import failed")}: ${err.message}`);
-                    }
-                }
-            };
-            input.click();
-        }
-    };
-
     const icsUrl = `${librepm.getApiUrl()}/public/calendar/${icsToken}/feed.ics`;
 
     return (
@@ -148,7 +98,7 @@ export default function IntegrationsPage({ shell }) {
                         </div>
                     )}
                 </div>
-                <div className="card-footer bg-light">
+                <div className="card-footer">
                     <button className="btn btn-sm btn-outline-secondary" onClick={handleRegenerateToken}>
                         {t("Regenerate Token")}
                     </button>
@@ -161,27 +111,55 @@ export default function IntegrationsPage({ shell }) {
                     <h5 className="mb-0">{t("Import / Export Data")}</h5>
                 </div>
                 <div className="card-body">
-                    <div className="row g-3">
+                    <TransferStatus busy={transfer.busy} />
+                    <div className="row g-4">
                         <div className="col-md-6">
-                            <h6>{t("Export")}</h6>
-                            <p className="small text-muted">{t("Export your data in various formats.")}</p>
-                            <div className="d-flex gap-2">
-                                <button className="btn btn-primary" onClick={() => handleExport('json')}>
-                                    <i className="bi bi-box-arrow-down me-2"></i>{t("Export JSON")}
+                            <h6>{t("Workspace (JSON)")}</h6>
+                            <p className="small text-muted">
+                                {t("All projects of the current profile with tasks, sub-tasks, tags and checklists. Works with both the local and the shared database.")}
+                            </p>
+                            <div className="d-flex gap-2 flex-wrap">
+                                <button type="button" className="btn btn-primary" onClick={transfer.exportJson}
+                                        disabled={!!transfer.busy} data-testid="integrations-export-json">
+                                    <TransferLabel active={transfer.busy === 'exportJson'} icon="bi-box-arrow-down">{t("Export JSON")}</TransferLabel>
                                 </button>
-                                <button className="btn btn-secondary" onClick={() => handleExport('csv')} disabled={!shell.currentProject}>
-                                    <i className="bi bi-file-earmark-spreadsheet me-2"></i>{t("Export CSV (Project)")}
+                                <button type="button" className="btn btn-outline-primary" onClick={transfer.importJson}
+                                        disabled={!!transfer.busy} data-testid="integrations-import-json">
+                                    <TransferLabel active={transfer.busy === 'importJson'} icon="bi-box-arrow-in-up">{t("Import JSON")}</TransferLabel>
                                 </button>
                             </div>
+                            <p className="small text-muted mt-2 mb-0">
+                                <i className="bi bi-info-circle me-1" aria-hidden="true"></i>
+                                {t("Import adds the projects in the file as new projects: existing data is not changed.")}
+                            </p>
                         </div>
                         <div className="col-md-6">
-                            <h6>{t("Import")}</h6>
-                            <p className="small text-muted">{t("Import data from a JSON backup. This will overwrite current data.")}</p>
-                            <button className="btn btn-danger" onClick={handleImport}>
-                                <i className="bi bi-box-arrow-in-up me-2"></i>{t("Import JSON")}
-                            </button>
+                            <h6>{t("Project tasks (CSV)")}</h6>
+                            <p className="small text-muted">
+                                {currentProject
+                                    ? t("Tasks of the selected project: {{name}}", { name: currentProject.name })
+                                    : t("Select a project to export or import its tasks as CSV.")}
+                            </p>
+                            <div className="d-flex gap-2 flex-wrap">
+                                <button type="button" className="btn btn-secondary" onClick={() => transfer.exportCsv(currentProject.id)}
+                                        disabled={!!transfer.busy || !currentProject} data-testid="integrations-export-csv">
+                                    <TransferLabel active={transfer.busy === 'exportCsv'} icon="bi-file-earmark-spreadsheet">{t("Export CSV (Project)")}</TransferLabel>
+                                </button>
+                                <button type="button" className="btn btn-outline-secondary" onClick={() => transfer.importCsv(currentProject.id)}
+                                        disabled={!!transfer.busy || !currentProject} data-testid="integrations-import-csv">
+                                    <TransferLabel active={transfer.busy === 'importCsv'} icon="bi-file-earmark-arrow-up">{t("Import CSV (Project)")}</TransferLabel>
+                                </button>
+                            </div>
+                            <p className="small text-muted mt-2 mb-0">
+                                <i className="bi bi-info-circle me-1" aria-hidden="true"></i>
+                                {t("CSV columns: title (required), description, status, priority, deadline (YYYY-MM-DD), estimatedEffort.")}
+                            </p>
                         </div>
                     </div>
+                    <p className="small text-muted mt-3 mb-0">
+                        <i className="bi bi-database me-1" aria-hidden="true"></i>
+                        {t("Full database backups (.db and encrypted) are in Settings, Backup and Synchronization.")}
+                    </p>
                 </div>
             </div>
 

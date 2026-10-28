@@ -7,8 +7,7 @@ import com.lorenzodm.librepm.service.CsvImportService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.BufferedReader;
-import java.io.StringReader;
+import java.util.Iterator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -57,9 +56,13 @@ public class CsvImportServiceImpl implements CsvImportService {
         List<Task> staged = new ArrayList<>();
 
         // PRD-14-BR-002: parse and validate before commit
-        try (BufferedReader reader = new BufferedReader(new StringReader(csvContent))) {
-            String headerLine = reader.readLine();
-            if (headerLine == null) {
+        try {
+            // Split into records honouring quoted fields that span several lines (the CSV export
+            // quotes descriptions containing new lines).
+            Iterator<String> reader = splitRecords(csvContent == null ? "" : csvContent).iterator();
+            String headerLine = reader.hasNext() ? reader.next() : null;
+            if (headerLine != null && headerLine.startsWith("\uFEFF")) headerLine = headerLine.substring(1);
+            if (headerLine == null || headerLine.isBlank()) {
                 return failJob(job, "File CSV vuoto");
             }
 
@@ -76,7 +79,8 @@ public class CsvImportServiceImpl implements CsvImportService {
 
             String line;
             int rowNum = 1;
-            while ((line = reader.readLine()) != null) {
+            while (reader.hasNext()) {
+                line = reader.next();
                 rowNum++;
                 if (line.isBlank()) continue;
                 String[] cols = parseCsvLine(line);
@@ -160,6 +164,27 @@ public class CsvImportServiceImpl implements CsvImportService {
         job.setErrorMessage(error);
         job.setCompletedAt(Instant.now());
         return jobRepository.save(job);
+    }
+
+    static List<String> splitRecords(String content) {
+        List<String> records = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inQuotes = false;
+        for (int i = 0; i < content.length(); i++) {
+            char c = content.charAt(i);
+            if (c == '"') {
+                inQuotes = !inQuotes; // doubled quotes toggle twice: state preserved
+                current.append(c);
+            } else if ((c == '\n' || c == '\r') && !inQuotes) {
+                if (c == '\r' && i + 1 < content.length() && content.charAt(i + 1) == '\n') i++;
+                records.add(current.toString());
+                current.setLength(0);
+            } else {
+                current.append(c);
+            }
+        }
+        if (current.length() > 0) records.add(current.toString());
+        return records;
     }
 
     private String[] parseCsvLine(String line) {

@@ -64,11 +64,18 @@ class SqliteToMariaDbMigratorE2ETest {
                 }
             }
 
+            // Simulate a pre-messaging remote schema: vendor migration must upgrade it.
+            try (Connection connection = DriverManager.getConnection(targetUrl, "root", ""); Statement statement = connection.createStatement()) {
+                statement.executeUpdate("DROP TABLE project_messages");
+                // ...and the second-precision TIMESTAMP columns written by earlier provisioners.
+                statement.executeUpdate("ALTER TABLE tasks MODIFY created_at TIMESTAMP NOT NULL");
+            }
+
             try (ConfigurableApplicationContext application = new SpringApplicationBuilder(LibrePMApplication.class)
                     .profiles("mariadb")
                     .properties(
                             "spring.jpa.hibernate.ddl-auto=none",
-                            "spring.flyway.enabled=false",
+                            "spring.flyway.enabled=true",
                             "spring.task.scheduling.enabled=false",
                             "server.port=0",
                             "librepm.remote-migration.enabled=false")
@@ -79,6 +86,37 @@ class SqliteToMariaDbMigratorE2ETest {
                             "--logging.file.name=" + temporaryDirectory.resolve("remote.log"))) {
                 var project = application.getBean(ProjectRepository.class).findById("e2e-project").orElseThrow();
                 assertEquals("Remote project", project.getName());
+                var messages = application.getBean(com.lorenzodm.librepm.repository.ProjectMessageRepository.class);
+                var sent = messages.saveAndFlush(new com.lorenzodm.librepm.core.entity.ProjectMessage(
+                        "e2e-project", "e2e-user", "MariaDB persistent message"));
+                assertNotNull(sent.getCreatedAt());
+                assertEquals("MariaDB persistent message", messages.findById(sent.getId()).orElseThrow().getContent());
+            }
+
+            try (Connection connection = DriverManager.getConnection(targetUrl, "root", ""); Statement statement = connection.createStatement()) {
+                try (ResultSet legacy = statement.executeQuery("SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND data_type = 'timestamp'")) {
+                    legacy.next();
+                    assertEquals(0, legacy.getInt(1), "every instant column must be upgraded to DATETIME(6)");
+                }
+                try (ResultSet row = statement.executeQuery("SELECT column_type FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'notes' AND column_name = 'created_at'")) {
+                    assertTrue(row.next());
+                    assertEquals("datetime(6)", row.getString(1));
+                }
+                try (ResultSet row = statement.executeQuery("SELECT created_at FROM tasks WHERE id='e2e-task'")) {
+                    assertTrue(row.next());
+                    assertEquals("2026-08-30 12:00:00.0", row.getTimestamp(1).toString());
+                }
+            }
+
+            // Legacy administrative startup import must precede vendor Flyway migrations.
+            String startupUrl = configuration.getURL("librepm_startup_e2e") + "?createDatabaseIfNotExist=true";
+            try (ConfigurableApplicationContext application = new SpringApplicationBuilder(LibrePMApplication.class)
+                    .profiles("mariadb")
+                    .run("--spring.datasource.url=" + startupUrl,
+                            "--spring.datasource.username=root", "--spring.datasource.password=",
+                            "--librepm.remote-migration.enabled=true", "--librepm.remote-migration.source=" + sqlite,
+                            "--server.port=0", "--logging.file.name=" + temporaryDirectory.resolve("startup.log"))) {
+                assertEquals("Remote project", application.getBean(ProjectRepository.class).findById("e2e-project").orElseThrow().getName());
             }
 
             SQLException collision = assertThrows(SQLException.class,

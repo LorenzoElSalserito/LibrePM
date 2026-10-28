@@ -30,7 +30,7 @@ function overlapMs(session, fromMs, toMs) {
 export default function FocusHistory({ selectedTask }) {
     const { t } = useTranslation();
     const [sessionsTask, setSessionsTask] = useState([]);
-    const [sessionsAll, setSessionsAll] = useState([]);
+    const [, setSessionsAll] = useState([]);
     const [running, setRunning] = useState(null);
     const [stats, setStats] = useState({ today: 0, week: 0 });
 

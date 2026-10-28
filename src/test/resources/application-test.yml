@@ -3,7 +3,7 @@ spring:
     name: LibrePM-Test
 
   datasource:
-    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=LEGACY
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=LEGACY;NON_KEYWORDS=KEY,VALUE
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -28,6 +28,7 @@ librepm:
     storage-path: ${java.io.tmpdir}/librepm-test/assets
     max-file-size: -1
     allowed-extensions: "png,jpg,jpeg,webp,gif,pdf,txt,md,json,csv"
+    backfill-on-startup: false
   cors:
     allowed-origins: "*"
     allow-credentials: false

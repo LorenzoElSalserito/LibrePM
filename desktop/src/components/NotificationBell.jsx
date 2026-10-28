@@ -3,7 +3,7 @@ import { librepm } from '@api/librepm.js';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
 
-export default function NotificationBell() {
+export default function NotificationBell({ shell = null }) {
     const { t } = useTranslation();
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState([]);
@@ -84,10 +84,39 @@ export default function NotificationBell() {
         }
     };
 
+    const canOpen = (n) => Boolean(shell) && ['FILE_ADDED', 'NEW_NOTE'].includes(n.type) && Boolean(n.referenceId);
+
+    const selectProject = (projectId) => {
+        const project = shell?.projects?.find(p => p.id === projectId);
+        if (project) shell.setCurrentProject(project);
+    };
+
+    // Opens what the notification is about: the task (planner) or the project (dashboard files).
+    const openNotification = async (n) => {
+        setIsOpen(false);
+        markAsRead(n.id);
+        try {
+            if (n.type === 'NEW_NOTE') {
+                shell.navigate("notes", n.referenceType === 'TASK' ? { taskId: n.referenceId } : { projectId: n.referenceId });
+            } else if (n.referenceType === 'TASK') {
+                const files = await librepm.attachmentsListForTask(n.referenceId).catch(() => []);
+                if (files?.[0]?.projectId) selectProject(files[0].projectId);
+                shell.navigate("planner", { taskId: n.referenceId });
+            } else {
+                selectProject(n.referenceId);
+                shell.navigate("dashboard", { projectId: n.referenceId });
+            }
+        } catch (e) {
+            console.error("Error opening notification:", e);
+        }
+    };
+
     const getNotificationIcon = (type) => {
         switch (type) {
             case 'NEW_NOTE':
                 return <i className="bi bi-chat-square-text text-primary fs-5"></i>;
+            case 'FILE_ADDED':
+                return <i className="bi bi-paperclip text-success fs-5" aria-hidden="true"></i>;
             case 'CONNECTION_REQUEST':
                 return <i className="bi bi-person-plus text-warning fs-5"></i>;
             case 'CONNECTION_ACCEPTED':
@@ -101,6 +130,8 @@ export default function NotificationBell() {
         switch (type) {
             case 'NEW_NOTE':
                 return t("New comment");
+            case 'FILE_ADDED':
+                return t("New file");
             case 'CONNECTION_REQUEST':
                 return t("Incoming Requests");
             case 'CONNECTION_ACCEPTED':
@@ -153,7 +184,12 @@ export default function NotificationBell() {
                                         </small>
                                     </div>
                                     <p className="mb-1 small text-break ps-4">{n.message}</p>
-                                    <div className="mt-2 text-end">
+                                    <div className="mt-2 d-flex justify-content-end gap-2">
+                                        {canOpen(n) && (
+                                            <button className="btn btn-sm btn-outline-primary py-0 px-2" style={{fontSize: '0.7rem'}} onClick={(e) => { e.stopPropagation(); openNotification(n); }}>
+                                                {n.type === 'FILE_ADDED' ? t("Open files") : t("Open")}
+                                            </button>
+                                        )}
                                         <button className="btn btn-sm btn-outline-secondary py-0 px-2" style={{fontSize: '0.7rem'}} onClick={(e) => { e.stopPropagation(); markAsRead(n.id); }}>
                                             {t("Mark as read")}
                                         </button>

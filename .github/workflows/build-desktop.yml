@@ -24,7 +24,14 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build with Gradle
-        run: ./gradlew clean build -x test
+        run: ./gradlew clean build
+
+      - name: Upload backend test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: build/reports/tests/test
 
       - name: Prepare Backend Artifact
         run: |
@@ -39,8 +46,52 @@ jobs:
           name: backend-jar
           path: ci-artifacts/backend/backend.jar
 
-  build-desktop:
+  verify-browser:
     needs: build-backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: ci-artifacts/backend
+      - run: npm ci
+        working-directory: desktop
+      - run: npx playwright install --with-deps chromium
+        working-directory: desktop
+      - run: npm run build
+        working-directory: desktop
+      - name: Browser E2E against isolated backend
+        shell: bash
+        run: |
+          TEST_DATA_PATH="$(mktemp -d)"
+          java -Dlibrepm.data.path="$TEST_DATA_PATH" -jar ci-artifacts/backend/backend.jar --server.port=8080 --server.address=127.0.0.1 > backend-e2e.log 2>&1 &
+          TEST_BACKEND_PID=$!
+          trap 'kill "$TEST_BACKEND_PID" || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8080/api/health; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:8080/api/health
+          xvfb-run -a npm --prefix desktop run test:e2e
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-evidence
+          path: |
+            desktop/test-results
+            backend-e2e.log
+
+  build-desktop:
+    needs: [build-backend, verify-browser]
     strategy:
       matrix:
         include:

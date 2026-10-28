@@ -25,7 +25,6 @@ export default function TimeTrackingPage({ shell }) {
     const timerRef = useRef(null);
 
     const projectId = shell?.currentProject?.id;
-    const currentUserId = librepm.getCurrentUser();
 
     useEffect(() => {
         shell?.setTitle?.(t("Time Tracking"));

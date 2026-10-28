@@ -31,6 +31,12 @@ spring:
     locations: classpath:db/migration
     baseline-on-migrate: true
 
+  servlet:
+    multipart:
+      # Slightly above librepm.assets.max-file-size so the service returns its clear 413 message.
+      max-file-size: 51MB
+      max-request-size: 52MB
+
 server:
   port: 0
   shutdown: graceful
@@ -58,10 +64,14 @@ librepm:
     max: 9000
 
   assets:
+    # Local cache of attachment bytes; the database (asset_contents) is the shared source.
     storage-path: ${librepm.data.path}/assets
-    max-file-size: -1
+    # Attachments travel through the (shared) database: 50 MB per file keeps it sane.
+    max-file-size: 52428800
+    # Copies attachments that exist only on this PC's disk into the database at startup.
+    backfill-on-startup: true
     # CSV: va bene sia per @Value che per ConfigurationProperties List
-    allowed-extensions: "png,jpg,jpeg,webp,gif,pdf,txt,md,json,csv"
+    allowed-extensions: "png,jpg,jpeg,webp,gif,pdf,txt,md,json,csv,doc,docx,xls,xlsx,ppt,pptx,odt,ods,odp,rtf,zip"
 
   cors:
     # CSV: binder -> List<String>
@@ -109,16 +119,20 @@ spring:
     activate:
       on-profile: mariadb
   datasource:
-    url: jdbc:mariadb://${LIBREPM_DB_HOST}:${LIBREPM_DB_PORT:3306}/${LIBREPM_DB_NAME}?createDatabaseIfNotExist=true
+    url: ${LIBREPM_DB_URL:jdbc:mariadb://${LIBREPM_DB_HOST:localhost}:${LIBREPM_DB_PORT:3306}/${LIBREPM_DB_NAME:librepm}?sslMode=verify-full}
     username: ${LIBREPM_DB_USERNAME}
     password: ${LIBREPM_DB_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     database-platform: org.hibernate.dialect.MariaDBDialect
   flyway:
-    # Existing SQLite migrations contain SQLite-specific SQL. MariaDB schemas
-    # must therefore be provisioned by an administrator before connection.
-    enabled: false
+    # Provision the base schema with --provision-mariadb. Subsequent MariaDB
+    # changes have their own migration history, independent from SQLite.
+    enabled: true
+    locations: classpath:db/mariadb
+    table: flyway_mariadb_schema_history
+    baseline-on-migrate: true
+    baseline-version: 0
 
 librepm:
   mode: web
@@ -170,6 +184,7 @@ spring:
       on-profile: desktop
 
 server:
+  address: 127.0.0.1
   port: 0
 
 librepm:

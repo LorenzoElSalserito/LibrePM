@@ -8,7 +8,6 @@ import com.lorenzodm.librepm.core.entity.Asset;
 import com.lorenzodm.librepm.service.AssetService;
 import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,18 +49,12 @@ public class AssetController {
 
     @GetMapping("/{assetId}")
     public ResponseEntity<AssetResponse> get(@PathVariable String userId, @PathVariable String assetId) {
-        return ResponseEntity.ok(assetMapper.toResponse(assetService.getOwned(userId, assetId)));
+        return ResponseEntity.ok(assetMapper.toResponse(assetService.getAccessible(userId, assetId)));
     }
 
     @GetMapping("/{assetId}/download")
     public ResponseEntity<Resource> download(@PathVariable String userId, @PathVariable String assetId) {
-        Asset asset = assetService.getOwned(userId, assetId);
-        Resource resource = assetService.download(userId, assetId);
-
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(asset.getMimeType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + asset.getFileName() + "\"")
-                .body(resource);
+        return AssetDownloads.toResponse(assetService.download(userId, assetId));
     }
 
     @GetMapping

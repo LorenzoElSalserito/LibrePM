@@ -7,7 +7,9 @@ import com.lorenzodm.librepm.service.EncryptionService;
 import com.lorenzodm.librepm.service.EventJournalService;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.InputStreamResource;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,9 @@ public class DatabaseTransferController {
     private final DatabaseTransferService databaseTransferService;
     private final EncryptionService encryptionService;
     private final EventJournalService eventJournalService;
+
+    /** Marker written into encrypted backups so the importer can recognise them. */
+    public static final String ENCRYPTED_FORMAT = "librepm-encrypted-db";
 
     public DatabaseTransferController(DatabaseTransferService databaseTransferService,
                                       EncryptionService encryptionService,
@@ -64,11 +69,33 @@ public class DatabaseTransferController {
     }
 
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public DatabaseImportResponse importDb(@RequestPart("file") MultipartFile file) {
-        DatabaseImportResponse result = databaseTransferService.importDb(file);
+    public ResponseEntity<DatabaseImportResponse> importDb(@RequestPart("file") MultipartFile file) {
+        return importResult(databaseTransferService.importDb(file));
+    }
+
+    /**
+     * Raw-body variant used by the desktop app: streams the .db file without the multipart size
+     * limits (real databases easily exceed the 1 MB multipart default).
+     */
+    @PostMapping(value = "/import", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<DatabaseImportResponse> importDbRaw(HttpServletRequest request) throws java.io.IOException {
+        try (var in = request.getInputStream()) {
+            return importResult(databaseTransferService.importDbStream(in));
+        }
+    }
+
+    private ResponseEntity<DatabaseImportResponse> importResult(DatabaseImportResponse result) {
         eventJournalService.record("DB_IMPORT", "DATABASE", null,
                 "{\"accepted\":" + result.accepted() + "}", null);
-        return result;
+        return result.accepted() ? ResponseEntity.ok(result) : ResponseEntity.badRequest().body(result);
+    }
+
+    @ExceptionHandler(DatabaseTransferService.FileTransferUnsupportedException.class)
+    public ResponseEntity<Map<String, Object>> unsupported(DatabaseTransferService.FileTransferUnsupportedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "status", 409,
+                "error", "FILE_TRANSFER_UNSUPPORTED",
+                "message", ex.getMessage()));
     }
 
     @PostMapping("/export-encrypted")
@@ -81,8 +108,13 @@ public class DatabaseTransferController {
         DatabaseTransferService.ExportedFile exported = databaseTransferService.exportDbSnapshot();
         try {
             byte[] data = java.nio.file.Files.readAllBytes(exported.path());
+            java.nio.file.Files.deleteIfExists(exported.path());
             EncryptionService.EncryptedPayload payload = encryptionService.encrypt(data, passphrase);
+            eventJournalService.record("DB_EXPORT", "DATABASE", null, "{\"format\":\"encrypted\"}", null);
             return ResponseEntity.ok(Map.of(
+                    "format", ENCRYPTED_FORMAT,
+                    "formatVersion", "1",
+                    "algorithm", "AES-256-GCM/PBKDF2",
                     "ciphertext", payload.ciphertext(),
                     "salt", payload.salt(),
                     "iv", payload.iv()
@@ -92,26 +124,44 @@ public class DatabaseTransferController {
         }
     }
 
-    @PostMapping("/import-encrypted")
-    public ResponseEntity<DatabaseImportResponse> importEncrypted(@RequestBody Map<String, String> body) {
-        String passphrase = body.get("passphrase");
-        String ciphertext = body.get("ciphertext");
-        String salt = body.get("salt");
-        String iv = body.get("iv");
+    /**
+     * Encrypted backups embed the whole database as Base64, which can exceed Jackson's default
+     * 20M-character string limit: parse the body with a mapper sized for large backups.
+     */
+    private static final com.fasterxml.jackson.databind.ObjectMapper LARGE_JSON =
+            com.fasterxml.jackson.databind.json.JsonMapper.builder(
+                    com.fasterxml.jackson.core.JsonFactory.builder()
+                            .streamReadConstraints(com.fasterxml.jackson.core.StreamReadConstraints.builder()
+                                    .maxStringLength(Integer.MAX_VALUE).build())
+                            .build()).build();
+
+    @PostMapping(value = "/import-encrypted", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<DatabaseImportResponse> importEncrypted(HttpServletRequest request) throws java.io.IOException {
+        com.fasterxml.jackson.databind.JsonNode body;
+        try (var in = request.getInputStream()) {
+            body = LARGE_JSON.readTree(in);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            return ResponseEntity.badRequest().body(new DatabaseImportResponse(false, false, null,
+                    "The file is not a LibrePM encrypted backup"));
+        }
+        String passphrase = body == null ? null : body.path("passphrase").asText(null);
+        String ciphertext = body == null ? null : body.path("ciphertext").asText(null);
+        String salt = body == null ? null : body.path("salt").asText(null);
+        String iv = body == null ? null : body.path("iv").asText(null);
 
         if (passphrase == null || ciphertext == null || salt == null || iv == null) {
             return ResponseEntity.badRequest().body(
                     new DatabaseImportResponse(false, false, null, "Missing required fields"));
         }
 
+        byte[] decrypted;
         try {
             EncryptionService.EncryptedPayload payload = new EncryptionService.EncryptedPayload(ciphertext, salt, iv);
-            byte[] decrypted = encryptionService.decrypt(payload, passphrase);
-            DatabaseImportResponse result = databaseTransferService.importDecryptedDb(decrypted);
-            return ResponseEntity.ok(result);
+            decrypted = encryptionService.decrypt(payload, passphrase);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(
-                    new DatabaseImportResponse(false, false, null, "Decryption failed: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(new DatabaseImportResponse(false, false, null,
+                    "Decryption failed: wrong passphrase or damaged backup file"));
         }
+        return importResult(databaseTransferService.importDecryptedDb(decrypted));
     }
 }

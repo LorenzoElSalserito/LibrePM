@@ -26,7 +26,7 @@ import java.nio.file.Paths;
  *
  * Modalità operative:
  * - desktop: embedded in Electron, porta dinamica, SQLite locale
- * - web: standalone server, porta fissa, PostgreSQL (futuro)
+ * - web: standalone server, porta fissa, MariaDB remoto
  *CD DESKTOP
  *
  *
@@ -39,7 +39,12 @@ public class LibrePMApplication {
 
 	private static final Logger log = LoggerFactory.getLogger(LibrePMApplication.class);
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+        if (java.util.Arrays.asList(args).contains("--provision-mariadb")) {
+            var report = com.lorenzodm.librepm.migration.MariaDbProvisioner.provision();
+            log.info("MariaDB provisioned: {} tables, {} rows", report.tables(), report.rows());
+            return;
+        }
 		// 1. Configura Data Path Cross-Platform
 		String dataPath = setupDataPath();
 		
@@ -61,7 +66,10 @@ public class LibrePMApplication {
 		String appFolderName = ".librepm";
 		
 		// Su Windows potremmo voler usare AppData, ma .librepm in user home è standard e sicuro
-		String appPath = userHome + File.separator + appFolderName;
+		String configured = System.getProperty("librepm.data.path");
+        if (configured == null || configured.isBlank()) configured = System.getenv("LIBREPM_DATA_PATH");
+        String appPath = configured == null || configured.isBlank()
+                ? userHome + File.separator + appFolderName : configured;
 		
 		File appDir = new File(appPath);
 		if (!appDir.exists()) {

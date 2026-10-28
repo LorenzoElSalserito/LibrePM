@@ -1,7 +1,6 @@
 package com.lorenzodm.librepm.core.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -35,7 +34,6 @@ public class AppPreference {
     @Column(nullable = false, length = 500)
     private String value;
 
-    @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
 
@@ -113,5 +111,18 @@ public class AppPreference {
                 ", value='" + value + '\'' +
                 ", updatedAt=" + updatedAt +
                 '}';
+    }
+
+    // Hibernate's @CreationTimestamp/@UpdateTimestamp truncate to whole seconds on
+    // converter-mapped columns: same-second notes and messages lost their order.
+    @PrePersist
+    protected void initAuditTimestamps() {
+        Instant now = Instant.now();
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void refreshUpdatedAt() {
+        updatedAt = Instant.now();
     }
 }

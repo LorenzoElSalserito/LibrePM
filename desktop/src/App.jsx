@@ -8,6 +8,7 @@ import SplashScreen from "@pages/SplashScreen.jsx";
 import DebugLogger from "./components/DebugLogger.jsx"; // Re-import DebugLogger PERMANENTE
 import "./styles/index.css";
 import "./styles/librepm-shell.css";
+import "./styles/premium.css";
 import "./i18n"; // Import i18n configuration
 import { useTranslation } from 'react-i18next';
 
@@ -127,9 +128,9 @@ export default function App() {
                 await i18n.changeLanguage(localPrefs.language);
             }
 
-            // Use local preferences as fallback for autologin
-            const shouldAutologin = autologinEnabled || localPrefs.autologinEnabled;
-            const userIdToUse = lastUserId || localPrefs.lastUserId;
+            // Client choice takes precedence over shared backend preferences
+            const shouldAutologin = localPrefs.lastUserId ? localPrefs.autologinEnabled : autologinEnabled;
+            const userIdToUse = localPrefs.lastUserId || lastUserId;
 
             if (shouldAutologin && userIdToUse) {
                 console.log("[App] Tentativo autologin con:", userIdToUse);

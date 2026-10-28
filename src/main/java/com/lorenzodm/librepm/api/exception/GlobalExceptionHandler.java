@@ -76,6 +76,39 @@ public class GlobalExceptionHandler {
                 .body(ApiErrorResponse.of(409, "DATABASE_BUSY", "Database occupato, riprova", req.getRequestURI(), Map.of()));
     }
 
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiErrorResponse> handleForbidden(ForbiddenException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiErrorResponse.of(403, "FORBIDDEN", ex.getMessage(), req.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ApiErrorResponse> handleStatus(org.springframework.web.server.ResponseStatusException ex, HttpServletRequest req) {
+        return ResponseEntity.status(ex.getStatusCode())
+                .body(ApiErrorResponse.of(ex.getStatusCode().value(), "REQUEST_ERROR", ex.getReason(), req.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler({org.springframework.http.converter.HttpMessageNotReadableException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class,
+            org.springframework.web.bind.MissingRequestHeaderException.class,
+            org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ApiErrorResponse> handleMalformedRequest(Exception ex, HttpServletRequest req) {
+        return ResponseEntity.badRequest()
+                .body(ApiErrorResponse.of(400, "BAD_REQUEST", "Richiesta non valida", req.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleUploadTooLarge(org.springframework.web.multipart.MaxUploadSizeExceededException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiErrorResponse.of(413, "PAYLOAD_TOO_LARGE", "File troppo grande (massimo 50 MB)", req.getRequestURI(), Map.of()));
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiErrorResponse> handleMethod(org.springframework.web.HttpRequestMethodNotSupportedException ex, HttpServletRequest req) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).allow(ex.getSupportedHttpMethods() == null ? new org.springframework.http.HttpMethod[0] : ex.getSupportedHttpMethods().toArray(new org.springframework.http.HttpMethod[0]))
+                .body(ApiErrorResponse.of(405, "METHOD_NOT_ALLOWED", "Metodo non supportato", req.getRequestURI(), Map.of()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleGeneric(Exception ex, HttpServletRequest req) {
         log.error("Errore non gestito", ex);

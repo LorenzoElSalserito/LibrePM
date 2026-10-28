@@ -51,6 +51,28 @@ public interface AssetRepository extends JpaRepository<Asset, String> {
     boolean existsByIdAndOwnerId(String assetId, String ownerId);
 
     // ========================================
+    // Collaborative Queries - Project / Task
+    // ========================================
+
+    /**
+     * Active attachments of a project (task attachments included), newest first.
+     */
+    @Query("SELECT a FROM Asset a WHERE a.projectId = :projectId AND a.deletedAt IS NULL ORDER BY a.createdAt DESC, a.id")
+    List<Asset> findActiveByProject(@Param("projectId") String projectId);
+
+    /**
+     * Active attachments of a task, newest first.
+     */
+    @Query("SELECT a FROM Asset a WHERE a.task.id = :taskId AND a.deletedAt IS NULL ORDER BY a.createdAt DESC, a.id")
+    List<Asset> findActiveByTask(@Param("taskId") String taskId);
+
+    /**
+     * Ids of every active asset, used by the startup backfill of legacy on-disk files.
+     */
+    @Query("SELECT a.id FROM Asset a WHERE a.deletedAt IS NULL")
+    List<String> findActiveIds();
+
+    // ========================================
     // Filter Queries - File Type
     // ========================================
 

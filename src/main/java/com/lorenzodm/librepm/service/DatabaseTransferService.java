@@ -8,7 +8,10 @@ import com.lorenzodm.librepm.config.LibrePMAssetsProperties;
 import com.lorenzodm.librepm.config.LibrePMDataProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,6 +23,12 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.MessageDigest;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -37,17 +46,55 @@ public class DatabaseTransferService {
     private final LibrePMAssetsProperties assetsProperties;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final String datasourceUrl;
+
+    /** Tables every LibrePM SQLite database must contain to be accepted for import. */
+    static final List<String> REQUIRED_TABLES = List.of("flyway_schema_history", "users", "projects", "tasks");
+
+    private static final Pattern MIGRATION_VERSION = Pattern.compile("^V(\\d+)__.*\\.sql$");
 
     public DatabaseTransferService(
             LibrePMDataProperties dataProperties,
             LibrePMAssetsProperties assetsProperties,
             JdbcTemplate jdbcTemplate,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            @Value("${spring.datasource.url:}") String datasourceUrl
     ) {
         this.dataProperties = dataProperties;
         this.assetsProperties = assetsProperties;
         this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
+        this.datasourceUrl = datasourceUrl == null ? "" : datasourceUrl;
+    }
+
+    /**
+     * Raw database file transfer (.db export/import, encrypted backups) only makes sense when the
+     * backend runs on its local SQLite file. On a shared MariaDB server these operations are refused.
+     */
+    public boolean isFileTransferSupported() {
+        return datasourceUrl.startsWith("jdbc:sqlite:");
+    }
+
+    public String getEngine() {
+        if (datasourceUrl.startsWith("jdbc:sqlite:")) return "sqlite";
+        if (datasourceUrl.startsWith("jdbc:mariadb:") || datasourceUrl.startsWith("jdbc:mysql:")) return "mariadb";
+        if (datasourceUrl.startsWith("jdbc:h2:")) return "h2";
+        return "unknown";
+    }
+
+    private void requireFileTransferSupported() {
+        if (!isFileTransferSupported()) {
+            throw new FileTransferUnsupportedException(
+                    "Database file export/import is only available with the local SQLite database. "
+                            + "This backend uses a shared " + getEngine() + " database: use the JSON export/import instead.");
+        }
+    }
+
+    /** Thrown when a raw database file operation is requested on a non-SQLite backend. */
+    public static class FileTransferUnsupportedException extends RuntimeException {
+        public FileTransferUnsupportedException(String message) {
+            super(message);
+        }
     }
 
     public Path getDbPath() {
@@ -88,30 +135,62 @@ public class DatabaseTransferService {
         }
 
         return new DatabaseStatusResponse(
-                db.toString(),
+                isFileTransferSupported() ? db.toString() : null,
                 exists,
                 size,
                 lastModified,
-                sqlite
+                sqlite,
+                getEngine(),
+                isFileTransferSupported()
         );
     }
 
     public ExportedFile exportDbSnapshot() {
+        requireFileTransferSupported();
         Path db = getDbPath();
         ensureExists(db);
+
+        String ts = DateTimeFormatter.ISO_INSTANT.format(Instant.now()).replace(":", "-");
+        Path exportsDir = getConfigDir().resolve("exports");
+        mkdirs(exportsDir);
+        pruneOldExports(exportsDir);
+        Path snapshot = exportsDir.resolve("librepm-export-" + ts + ".db");
+
+        // VACUUM INTO writes a consistent, self-contained copy (WAL content included) without
+        // racing concurrent writers. Fall back to checkpoint + file copy on older SQLite builds.
+        try {
+            Files.deleteIfExists(snapshot);
+            jdbcTemplate.execute("VACUUM INTO '" + snapshot.toString().replace("'", "''") + "'");
+            if (isSqliteFile(snapshot)) {
+                return new ExportedFile(snapshot, "application/octet-stream", "LibrePM-db-" + ts + ".db");
+            }
+        } catch (Exception e) {
+            log.debug("VACUUM INTO non disponibile, uso checkpoint + copia: {}", e.getMessage());
+        }
 
         try {
             jdbcTemplate.execute("PRAGMA wal_checkpoint(FULL)");
         } catch (Exception e) {
             log.debug("PRAGMA wal_checkpoint(FULL) non eseguito (ok in alcuni setup): {}", e.getMessage());
         }
+        return copySnapshot(db, snapshot, ts);
+    }
 
-        Path exportsDir = getConfigDir().resolve("exports");
-        mkdirs(exportsDir);
+    /** Snapshots are only staging copies for the HTTP download: keep the most recent few. */
+    private void pruneOldExports(Path exportsDir) {
+        try (var files = Files.list(exportsDir)) {
+            List<Path> old = files
+                    .filter(p -> p.getFileName().toString().startsWith("librepm-export-"))
+                    .sorted(Comparator.comparing(Path::toString).reversed())
+                    .skip(4)
+                    .toList();
+            old.forEach(DatabaseTransferService::deleteQuietly);
+        } catch (IOException e) {
+            log.debug("Pulizia export precedenti non riuscita: {}", e.getMessage());
+        }
+    }
 
-        String ts = DateTimeFormatter.ISO_INSTANT.format(Instant.now()).replace(":", "-");
-        Path snapshot = exportsDir.resolve("librepm-export-" + ts + ".db");
-
+    private ExportedFile copySnapshot(Path db, Path snapshot, String ts) {
         try {
             Files.copy(db, snapshot, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
@@ -122,6 +201,7 @@ public class DatabaseTransferService {
     }
 
     public ExportedFile exportZip(boolean includeAssets) {
+        requireFileTransferSupported();
         Path db = getDbPath();
         ensureExists(db);
 
@@ -263,39 +343,30 @@ public class DatabaseTransferService {
         if (file == null || file.isEmpty()) {
             return new DatabaseImportResponse(false, false, null, "File mancante o vuoto");
         }
-
-        String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
-        if (!original.endsWith(".db")) {
-            return new DatabaseImportResponse(false, false, null, "Il file deve avere estensione .db (SQLite)");
-        }
-
-        mkdirs(getPendingImportDir());
-
-        Path pending = getPendingDbFile();
-        Path marker = getPendingMarkerFile();
-
-        try {
-            try (InputStream in = new BufferedInputStream(file.getInputStream())) {
-                Files.copy(in, pending, StandardCopyOption.REPLACE_EXISTING);
-            }
-
-            if (!isSqliteFile(pending)) {
-                Files.deleteIfExists(pending);
-                Files.deleteIfExists(marker);
-                return new DatabaseImportResponse(false, false, null, "Il file non sembra un database SQLite valido");
-            }
-
-            Files.writeString(marker, "PENDING", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-            return new DatabaseImportResponse(
-                    true,
-                    true,
-                    pending.toString(),
-                    "Import accettato: verrà applicato al prossimo avvio del backend LibrePM (Electron potrà riavviare il processo)."
-            );
-
+        try (InputStream in = new BufferedInputStream(file.getInputStream())) {
+            return importDbStream(in);
         } catch (IOException e) {
             return new DatabaseImportResponse(false, false, null, "Errore import: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Stages a LibrePM SQLite database for import. The file is validated (SQLite header, integrity,
+     * LibrePM schema, not newer than this app) and written to the pending-import slot; it replaces
+     * the live database on the next backend start (see PendingDbImportRunListener), which first
+     * backs up the current database. The caller (Electron) restarts the backend right after.
+     */
+    public DatabaseImportResponse importDbStream(InputStream in) {
+        requireFileTransferSupported();
+        mkdirs(getPendingImportDir());
+        Path partial = getPendingImportDir().resolve("incoming-" + UUID.randomUUID() + ".db");
+        try {
+            Files.copy(in, partial, StandardCopyOption.REPLACE_EXISTING);
+            return stageValidatedFile(partial);
+        } catch (IOException e) {
+            return new DatabaseImportResponse(false, false, null, "Errore import: " + e.getMessage());
+        } finally {
+            deleteQuietly(partial);
         }
     }
 
@@ -303,23 +374,116 @@ public class DatabaseTransferService {
         if (data == null || data.length < SQLITE_HEADER.length()) {
             return new DatabaseImportResponse(false, false, null, "Decrypted data is empty or too small");
         }
+        return importDbStream(new java.io.ByteArrayInputStream(data));
+    }
 
-        String header = new String(data, 0, SQLITE_HEADER.length());
-        if (!SQLITE_HEADER.equals(header)) {
-            return new DatabaseImportResponse(false, false, null, "Decrypted data is not a valid SQLite database");
+    private DatabaseImportResponse stageValidatedFile(Path candidate) throws IOException {
+        String problem = validateLibrePmDatabase(candidate);
+        if (problem != null) {
+            return new DatabaseImportResponse(false, false, null, problem);
         }
 
-        mkdirs(getPendingImportDir());
         Path pending = getPendingDbFile();
         Path marker = getPendingMarkerFile();
+        Files.copy(candidate, pending, StandardCopyOption.REPLACE_EXISTING);
+        Files.writeString(marker, "PENDING", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
+        // Flush the WAL of the live database so the pre-import backup taken at restart is complete.
         try {
-            Files.write(pending, data, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            Files.writeString(marker, "PENDING", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-            return new DatabaseImportResponse(true, true, pending.toString(),
-                    "Encrypted import accepted: will be applied on next backend restart.");
+            jdbcTemplate.execute("PRAGMA wal_checkpoint(TRUNCATE)");
+        } catch (Exception e) {
+            log.debug("PRAGMA wal_checkpoint(TRUNCATE) non eseguito: {}", e.getMessage());
+        }
+
+        return new DatabaseImportResponse(
+                true,
+                true,
+                pending.toString(),
+                "Import accepted: the database will be replaced when the backend restarts (a backup of the current database is kept)."
+        );
+    }
+
+    /**
+     * @return null when the file is a usable LibrePM database, otherwise a human readable reason.
+     */
+    public String validateLibrePmDatabase(Path file) {
+        if (!isSqliteFile(file)) {
+            return "The file is not a SQLite database";
+        }
+        Path probe = null;
+        try {
+            // Work on a throw-away copy: opening a database may create journal files next to it.
+            probe = Files.createTempFile(file.getParent(), "probe-", ".db");
+            Files.copy(file, probe, StandardCopyOption.REPLACE_EXISTING);
+            try (Connection c = DriverManager.getConnection("jdbc:sqlite:" + probe.toAbsolutePath());
+                 Statement st = c.createStatement()) {
+                try (ResultSet rs = st.executeQuery("PRAGMA quick_check")) {
+                    String result = rs.next() ? rs.getString(1) : null;
+                    if (!"ok".equalsIgnoreCase(result)) {
+                        return "The database is damaged (integrity check: " + result + ")";
+                    }
+                }
+                Set<String> tables = new HashSet<>();
+                try (ResultSet rs = st.executeQuery("SELECT name FROM sqlite_master WHERE type='table'")) {
+                    while (rs.next()) tables.add(rs.getString(1).toLowerCase(Locale.ROOT));
+                }
+                for (String required : REQUIRED_TABLES) {
+                    if (!tables.contains(required)) {
+                        return "The file is not a LibrePM database (missing table '" + required + "')";
+                    }
+                }
+                int imported = 0;
+                try (ResultSet rs = st.executeQuery(
+                        "SELECT version FROM flyway_schema_history WHERE success = 1 AND version IS NOT NULL")) {
+                    while (rs.next()) {
+                        try {
+                            imported = Math.max(imported, Integer.parseInt(rs.getString(1).trim()));
+                        } catch (NumberFormatException ignored) {
+                            // non-numeric versions are not produced by LibrePM
+                        }
+                    }
+                }
+                int supported = latestBundledMigration();
+                if (supported > 0 && imported > supported) {
+                    return "The database was created by a newer LibrePM version (schema " + imported
+                            + ", this app supports up to " + supported + "). Update LibrePM first.";
+                }
+            }
+            return null;
+        } catch (Exception e) {
+            return "The file cannot be read as a LibrePM database: " + e.getMessage();
+        } finally {
+            if (probe != null) {
+                deleteQuietly(probe);
+                deleteQuietly(Paths.get(probe + "-wal"));
+                deleteQuietly(Paths.get(probe + "-shm"));
+                deleteQuietly(Paths.get(probe + "-journal"));
+            }
+        }
+    }
+
+    static int latestBundledMigration() {
+        try {
+            Resource[] resources = new PathMatchingResourcePatternResolver()
+                    .getResources("classpath*:db/migration/V*__*.sql");
+            int max = 0;
+            for (Resource r : resources) {
+                String name = r.getFilename();
+                if (name == null) continue;
+                Matcher m = MIGRATION_VERSION.matcher(name);
+                if (m.matches()) max = Math.max(max, Integer.parseInt(m.group(1)));
+            }
+            return max;
         } catch (IOException e) {
-            return new DatabaseImportResponse(false, false, null, "Error writing decrypted DB: " + e.getMessage());
+            return 0;
+        }
+    }
+
+    private static void deleteQuietly(Path p) {
+        try {
+            Files.deleteIfExists(p);
+        } catch (IOException ignored) {
+            // best effort
         }
     }
 

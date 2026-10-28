@@ -48,8 +48,8 @@ const AnalyticsPage = ({ shell }) => {
 
             // Task completion stats
             const total = tasks.length;
-            const completed = tasks.filter(t => t.status === 'DONE' || t.status === 'done' || t.statusName === 'Done').length;
-            const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS' || t.status === 'in_progress' || t.statusName === 'In Progress').length;
+            const completed = tasks.filter(t => t.statusName === 'DONE').length;
+            const inProgress = tasks.filter(t => t.statusName === 'IN_PROGRESS').length;
             const byType = {};
             tasks.forEach(task => {
                 const type = task.type || 'STANDARD';

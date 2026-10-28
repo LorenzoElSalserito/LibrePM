@@ -54,6 +54,16 @@ const STORAGE_KEY_LANGUAGE = 'librepm_language';
 async function initializeApi() {
     if (API_BASE_URL) return API_BASE_URL;
 
+    const configuredUrl = import.meta.env.VITE_API_BASE_URL;
+    if (configuredUrl) {
+        const url = new URL(configuredUrl);
+        if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
+            throw new Error('Remote backend requires HTTPS');
+        }
+        API_BASE_URL = url.href.replace(/\/$/, '');
+        return API_BASE_URL;
+    }
+
     try {
         // In Electron, try reading port from config file via IPC
         if (window.librepm && window.librepm.getBackendPort) {
@@ -146,7 +156,11 @@ async function apiRequest(endpoint, options = {}) {
         defaultHeaders['X-User-Id'] = CURRENT_USER_ID;
     }
 
+    const csrf = document.cookie.split("; ").find(value => value.startsWith("XSRF-TOKEN="));
+    if (csrf) defaultHeaders["X-XSRF-TOKEN"] = decodeURIComponent(csrf.slice("XSRF-TOKEN=".length));
+
     const config = {
+        credentials: "include",
         ...options,
         headers: {
             ...defaultHeaders,
@@ -176,6 +190,8 @@ async function apiRequest(endpoint, options = {}) {
             return null;
         }
 
+        if (options.responseType === 'blob') return response.blob();
+
         // Handle empty responses with status 200
         const text = await response.text();
         if (!text) {
@@ -202,6 +218,18 @@ async function apiRequest(endpoint, options = {}) {
             { originalError: error.message }
         );
     }
+}
+
+/**
+ * Headers for multipart/binary attachment requests (no JSON content type).
+ * @returns {Object} Identity and CSRF headers.
+ */
+function attachmentHeaders() {
+    const headers = {};
+    if (CURRENT_USER_ID) headers['X-User-Id'] = CURRENT_USER_ID;
+    const csrf = document.cookie.split("; ").find(value => value.startsWith("XSRF-TOKEN="));
+    if (csrf) headers["X-XSRF-TOKEN"] = decodeURIComponent(csrf.slice("XSRF-TOKEN=".length));
+    return headers;
 }
 
 /**
@@ -264,6 +292,69 @@ function loadLocalPreference(key, defaultValue = null) {
         console.warn('[LibrePM API] Errore lettura preferenza:', e);
         return defaultValue;
     }
+}
+
+// ========================================
+// Data transfer helpers (export/import)
+// ========================================
+
+/** Desktop bridge exposed by electron/preload.cjs (null in the browser). */
+function transferBridge() {
+    return typeof window !== 'undefined' ? window.librepm?.dataTransfer || null : null;
+}
+
+/** Normalises a desktop transfer result: canceled -> { canceled: true }, errors -> ApiError. */
+function unwrapTransfer(result) {
+    if (!result) throw new ApiError('Export/import failed', 0);
+    if (result.canceled) return { canceled: true };
+    if (!result.ok) throw new ApiError(result.error || 'Export/import failed', 0, { code: result.code });
+    return result;
+}
+
+function requireCurrentUser() {
+    if (!CURRENT_USER_ID) throw new ApiError('No profile selected', 0);
+    return CURRENT_USER_ID;
+}
+
+function transferStamp() {
+    return new Date().toISOString().slice(0, 16).replace('T', '_').replace(':', '');
+}
+
+/** Browser fallback: saves a Blob through a temporary download link. */
+function downloadBlob(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Browser fallback: asks for one file; resolves to null when the picker is dismissed. */
+function pickFile(accept) {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = accept;
+        input.addEventListener('change', () => resolve(input.files?.[0] || null), { once: true });
+        input.addEventListener('cancel', () => resolve(null), { once: true });
+        input.click();
+    });
+}
+
+async function rawRequest(endpoint, { method = 'GET', body, contentType } = {}) {
+    const baseUrl = await getApiUrl();
+    const headers = {};
+    if (CURRENT_USER_ID) headers['X-User-Id'] = CURRENT_USER_ID;
+    if (contentType) headers['Content-Type'] = contentType;
+    const response = await fetch(`${baseUrl}${endpoint}`, { method, body, headers, credentials: 'include' });
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new ApiError(data.message || data.error || `HTTP ${response.status}`, response.status, data);
+    }
+    return response;
 }
 
 // ========================================
@@ -522,6 +613,9 @@ export const librepm = {
     /**
      * Lists remote identities for a user (OIDC/OAuth2 bindings).
      */
+    messagesList: (projectId, page = 0) => apiRequest(`${getUserBasePath()}/projects/${projectId}/messages?page=${page}`),
+    messagesSend: (projectId, content) => apiRequest(`${getUserBasePath()}/projects/${projectId}/messages`, { method: 'POST', body: { content } }),
+
     remoteIdentitiesList: (userId) => apiRequest(`/users/${userId}/identities`),
 
     /**
@@ -1387,7 +1481,9 @@ export const librepm = {
         params.append('parentId', data.parentId);
         
         // Remove parentType/parentId from body as they are now query params
-        const { parentType, parentId, ...body } = data;
+        const body = { ...data };
+        delete body.parentType;
+        delete body.parentId;
         
         return apiRequest(`/notes?${params.toString()}`, {
             method: 'POST',
@@ -1895,14 +1991,63 @@ export const librepm = {
     /**
      * Downloads an asset.
      */
-    assetsDownload: async (assetId) => {
-        const baseUrl = await getApiUrl();
-        const basePath = getUserBasePath();
-        const url = `${baseUrl}${basePath}/assets/${assetId}/download`;
-        
-        // Trigger download in browser
-        window.open(url, '_blank');
+    assetsDownload: async (assetId, fileName = null) => {
+        return librepm.attachmentsDownload({ id: assetId, fileName });
     },
+
+    // ========================================
+    // Shared attachments (projects and tasks)
+    // Bytes travel through the database: files uploaded on another PC can be opened here.
+    // ========================================
+
+    attachmentsListForProject: (projectId) => apiRequest(`/projects/${projectId}/assets`),
+
+    attachmentsListForTask: (taskId) => apiRequest(`/tasks/${taskId}/assets`),
+
+    /** Uploads a file to a task (when taskId is set) or to a project. */
+    attachmentsUpload: async ({ projectId = null, taskId = null, file, description = null }) => {
+        const baseUrl = await getApiUrl();
+        const formData = new FormData();
+        formData.append('file', file);
+        if (description) formData.append('description', description);
+        const endpoint = taskId ? `/tasks/${taskId}/assets` : `/projects/${projectId}/assets`;
+        const response = await fetch(`${baseUrl}${endpoint}`, {
+            method: 'POST',
+            body: formData,
+            credentials: 'include',
+            headers: attachmentHeaders(),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new ApiError(errorData.message || 'Upload failed', response.status, errorData);
+        }
+        return response.json();
+    },
+
+    /** Downloads an attachment (also one uploaded on another PC) and hands it to the browser as a file. */
+    attachmentsDownload: async (asset) => {
+        const baseUrl = await getApiUrl();
+        const response = await fetch(`${baseUrl}/assets/${asset.id}/download`, {
+            credentials: 'include',
+            headers: attachmentHeaders(),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new ApiError(errorData.message || 'Download failed', response.status, errorData);
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = asset.fileName || 'download';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return blob;
+    },
+
+    attachmentsDelete: (assetId) => apiRequest(`/assets/${assetId}`, { method: 'DELETE' }),
 
     // ========================================
     // Reminders API (v0.2.0)
@@ -2044,17 +2189,7 @@ export const librepm = {
     /**
      * Generate diagnostics bundle (ZIP download).
      */
-    diagnosticsGenerate: async () => {
-        const baseUrl = await getApiUrl();
-        const headers = { 'Content-Type': 'application/json' };
-        if (currentUserId) headers['X-User-Id'] = currentUserId;
-        const response = await fetch(`${baseUrl}/diagnostics/generate`, {
-            method: 'POST',
-            headers,
-        });
-        if (!response.ok) throw new Error(`Diagnostics generation failed: ${response.status}`);
-        return response.blob();
-    },
+    diagnosticsGenerate: () => apiRequest('/diagnostics/generate', { method: 'POST', responseType: 'blob' }),
 
     /**
      * Export database encrypted with passphrase.
@@ -2295,48 +2430,133 @@ export const librepm = {
     programmeOverview: (progId) => apiRequest(`/programmes/${progId}/overview`),
 
     // PDF Report Generation
-    reportGenerate: async (projectId, type = 'EXECUTIVE_SUMMARY') => {
-        const baseUrl = await getApiUrl();
-        const headers = {};
-        if (currentUserId) headers['X-User-Id'] = currentUserId;
-        const response = await fetch(`${baseUrl}/projects/${projectId}/report?type=${type}`, { headers });
-        if (!response.ok) throw new Error(`Report generation failed: ${response.status}`);
-        return response.blob();
-    },
+    reportGenerate: (projectId, type = 'EXECUTIVE_SUMMARY') => apiRequest(`/projects/${projectId}/report?type=${encodeURIComponent(type)}`, { responseType: 'blob' }),
 
     // ========================================
-    // Electron IPC Fallback (desktop only)
+    // Data transfer (export/import)
+    // Desktop: native dialogs in the main process (window.librepm.dataTransfer).
+    // Browser: download links and file pickers. Every call resolves to
+    // { canceled: true } or { filePath?, summary?, restarted? } and throws ApiError on failure.
     // ========================================
 
-    /**
-     * Export JSON with native dialog.
-     */
-    exportJsonDialog: () => {
-        if (window.librepm?.exportJsonDialog) {
-            return window.librepm.exportJsonDialog();
+    /** { engine, fileTransferSupported }: raw .db/encrypted transfer exists only on local SQLite. */
+    transferCapabilities: async () => {
+        const bridge = transferBridge();
+        if (bridge) {
+            const caps = await bridge.capabilities();
+            if (caps?.ok) return { engine: caps.engine, fileTransferSupported: caps.fileTransferSupported };
         }
-        throw new Error('Funzione disponibile solo in Electron');
+        const status = await apiRequest('/db/status');
+        return { engine: status?.engine || 'unknown', fileTransferSupported: status?.fileTransferSupported === true };
+    },
+
+    /** Workspace JSON export (all projects of the current profile). */
+    transferExportJson: async () => {
+        const userId = requireCurrentUser();
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.exportJson(userId));
+        const doc = await apiRequest(`/users/${userId}/workspace/export`);
+        downloadBlob(new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' }), `LibrePM-export-${transferStamp()}.json`);
+        return { summary: doc?.summary || null };
+    },
+
+    /** Additive workspace JSON import into the current profile. */
+    transferImportJson: async () => {
+        const userId = requireCurrentUser();
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.importJson(userId));
+        const file = await pickFile('.json,application/json');
+        if (!file) return { canceled: true };
+        let doc;
+        try {
+            doc = JSON.parse(await file.text());
+        } catch {
+            throw new ApiError('The file is not valid JSON', 0);
+        }
+        const summary = await apiRequest(`/users/${userId}/workspace/import`, { method: 'POST', body: doc });
+        return { summary };
+    },
+
+    /** Tasks of one project as CSV. */
+    transferExportCsv: async (projectId) => {
+        const userId = requireCurrentUser();
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.exportCsv(userId, projectId));
+        const job = await apiRequest(`/users/${userId}/projects/${projectId}/export/csv`, { method: 'POST' });
+        if (job?.status !== 'COMPLETED') throw new ApiError(job?.errorMessage || 'CSV export failed', 0);
+        downloadBlob(new Blob(['﻿' + (job.resultPayload || '')], { type: 'text/csv' }), `LibrePM-tasks-${transferStamp()}.csv`);
+        return { summary: { tasks: job.recordCount ?? 0 } };
+    },
+
+    /** Tasks from a CSV file into one project. */
+    transferImportCsv: async (projectId) => {
+        const userId = requireCurrentUser();
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.importCsv(userId, projectId));
+        const file = await pickFile('.csv,text/csv');
+        if (!file) return { canceled: true };
+        const response = await rawRequest(`/users/${userId}/projects/${projectId}/import/csv`, {
+            method: 'POST', body: await file.text(), contentType: 'text/plain; charset=utf-8',
+        });
+        const job = await response.json();
+        if (job?.status !== 'COMPLETED') throw new ApiError(job?.errorMessage || 'CSV import failed', 0);
+        return { summary: { tasks: job.recordCount ?? 0, warnings: job.errorMessage || null } };
+    },
+
+    /** Raw SQLite snapshot (.db). */
+    transferExportDb: async () => {
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.exportDb());
+        const response = await rawRequest('/db/export?format=db');
+        downloadBlob(await response.blob(), `LibrePM-db-${transferStamp()}.db`);
+        return {};
     },
 
     /**
-     * Export CSV with native dialog.
+     * Restores a .db file. Desktop: the backend is restarted to apply it (current DB backed up).
+     * Browser: the import is staged and applied when the server restarts (restarted: false).
      */
-    exportCsvDialog: (projectId) => {
-        if (window.librepm?.exportCsvDialog) {
-            return window.librepm.exportCsvDialog(projectId);
-        }
-        throw new Error('Funzione disponibile solo in Electron');
+    transferImportDb: async () => {
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.importDb());
+        const file = await pickFile('.db,.sqlite,.sqlite3');
+        if (!file) return { canceled: true };
+        await rawRequest('/db/import', { method: 'POST', body: file, contentType: 'application/octet-stream' });
+        return { restarted: false };
     },
 
-    /**
-     * Import JSON with native dialog.
-     */
-    importJsonDialog: () => {
-        if (window.librepm?.importJsonDialog) {
-            return window.librepm.importJsonDialog();
-        }
-        throw new Error('Funzione disponibile solo in Electron');
+    /** AES-256-GCM encrypted database backup. */
+    transferExportEncrypted: async (passphrase) => {
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.exportEncrypted(passphrase));
+        const payload = await apiRequest('/db/export-encrypted', { method: 'POST', body: { passphrase } });
+        const doc = { format: 'librepm-encrypted-db', formatVersion: 1, exportedAt: new Date().toISOString(),
+            algorithm: payload.algorithm, salt: payload.salt, iv: payload.iv, ciphertext: payload.ciphertext };
+        downloadBlob(new Blob([JSON.stringify(doc)], { type: 'application/json' }), `LibrePM-encrypted-${transferStamp()}.enc.json`);
+        return {};
     },
+
+    /** Restores an encrypted backup with its passphrase (same restart semantics as transferImportDb). */
+    transferImportEncrypted: async (passphrase) => {
+        const bridge = transferBridge();
+        if (bridge) return unwrapTransfer(await bridge.importEncrypted(passphrase));
+        const file = await pickFile('.json,application/json');
+        if (!file) return { canceled: true };
+        let doc;
+        try {
+            doc = JSON.parse(await file.text());
+        } catch {
+            throw new ApiError('The file is not a LibrePM encrypted backup', 0);
+        }
+        await apiRequest('/db/import-encrypted', { method: 'POST',
+            body: { ciphertext: doc?.ciphertext, salt: doc?.salt, iv: doc?.iv, passphrase } });
+        return { restarted: false };
+    },
+
+    // Legacy names kept for older callers.
+    exportJsonDialog: () => librepm.transferExportJson(),
+    exportCsvDialog: (projectId) => librepm.transferExportCsv(projectId),
+    importJsonDialog: () => librepm.transferImportJson(),
 
     /**
      * Gets local data path.

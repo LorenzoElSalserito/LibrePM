@@ -1,52 +1,71 @@
 # Capitolo 10: Template e Gallery 🎨
 
-Non vuoi costruire ogni progetto da zero? La pagina **Gallery** offre una collezione di template di progetto preconfigurati che ti danno un vantaggio iniziale.
+Non vuoi costruire ogni progetto da zero? La pagina **Galleria** offre una collezione di template di progetto preconfigurati che ti danno un vantaggio iniziale.
 
 ---
 
-## 🖼️ La Gallery dei Template
+## 🖼️ La Galleria dei Template
 
-Vai nella pagina **"Gallery"** nella barra laterale. Vedrai una griglia di card template.
+Clicca **"Galleria"** nella barra laterale (il titolo della pagina è **"Galleria Template"**). In alto leggi "Template di Progetto — Inizia il tuo progetto con una struttura pre-configurata." e sotto vedi una griglia di card.
+
+### Filtri
+Sopra la griglia trovi due menu e un contatore:
+*   **"Tutte le Categorie"**: filtra per categoria (es. PLANNING, PROJECT MANAGEMENT, NONPROFIT, GRANTS...).
+*   **"Tutte le Complessità"**: filtra per complessità — **Semplice**, **Moderato** o **Avanzato**.
+*   Il numero di template che corrispondono ai filtri (es. "11 template").
+
+Il pulsante 🔄 **Aggiorna** nella barra superiore ricarica la lista.
 
 ### Card Template
-Ogni card template mostra:
-*   **Icona**: Un identificativo visuale del template.
-*   **Badge Sistema**: Se il template è integrato in LibrePM, appare un badge "System".
-*   **Nome**: Il nome del template (es. "Project Timeline", "Event Marketing Timeline").
-*   **Descrizione**: Una breve spiegazione di a cosa serve il template (anteprima 3 righe).
-*   **Conteggio Task**: Quanti task sono inclusi (icona list-task + numero).
-*   **Conteggio Milestone**: Quante milestone sono incluse (icona bandiera + numero).
-*   **Pulsante "Preview & Use"**: Apre l'anteprima del template.
+Ogni card mostra:
+*   **Icona** della categoria.
+*   **Badge complessità** (SIMPLE, MODERATE o ADVANCED).
+*   **Badge "Sistema"** se il template è integrato in LibrePM.
+*   **Nome** e **descrizione** (anteprima di 3 righe).
+*   **Badge dei moduli** richiesti (es. "planning"), se presenti.
+*   La **versione** del template (es. "v1.0").
+*   Il pulsante **"Anteprima & Usa"**. Puoi anche cliccare in qualsiasi punto della card.
 
 ### Template Integrati
-LibrePM include 4 template di sistema:
-*   **Project Timeline**: Una timeline di progetto generica.
-*   **Project Tracking**: Per monitorare l'esecuzione del progetto.
-*   **Gantt Project**: Un template progettato per la pianificazione basata su Gantt.
-*   **Event Marketing Timeline**: Per pianificare eventi di marketing.
+LibrePM include questi template di sistema:
+
+| Template | A cosa serve |
+|----------|--------------|
+| **Project Timeline** | Pianificazione con Gantt, fasi e dipendenze |
+| **Project Tracking** | Gestione task con flusso di stati e dashboard |
+| **Gantt Project** | WBS, dipendenze, baseline e percorso critico |
+| **Event Marketing Timeline** | Pianificazione di eventi di marketing: lanci, conferenze, campagne |
+| **Nonprofit Grant Project** | Budget, fondi vincolati, deliverable e periodi di rendicontazione |
+| **Public Call Application** | Registro bandi, checklist di eligibilità e pacchetto di candidatura |
+| **Sponsored Initiative** | Impegni degli sponsor, mappa stakeholder e raccolta evidenze |
+| **R&D Consortium** | Partner, work package, cofinanziamento e registro deliverable |
+| **Agency Delivery** | Deliverable per cliente, budget per deliverable, timesheet |
+| **Internal Operations Programme** | Panoramica portfolio, milestone e pianificazione risorse |
+| **Portfolio Review Workspace** | Vista multi-progetto, rischio aggregato e concentrazione dei finanziamenti |
 
 ---
 
 ## 🚀 Usare un Template
 
-Clicca **"Preview & Use"** su qualsiasi card template. Si apre una modale con:
+Clicca **"Anteprima & Usa"** su una card. Si apre la finestra **"Usa Template: nome"**:
 
 ### Colonna Sinistra: Dettagli Template
-*   **Nome** e **descrizione** del template.
-*   **Funzionalità Incluse**: Una lista puntata di cosa include il template (task, fasi, milestone, ecc.).
+*   La **descrizione** del template.
+*   **Casi d'Uso** e **Prerequisiti**, se indicati.
+*   **Cosa verrà creato**: un riepilogo della struttura (numero di fasi, task, stati, deliverable, dipendenze, metriche).
+*   I badge di **complessità** e **versione**.
 
-### Colonna Destra: Il Tuo Nuovo Progetto
-*   **Nome Progetto** (obbligatorio): Scegli un nome per il tuo nuovo progetto.
-*   **Descrizione**: Aggiungi una descrizione opzionale.
+### Colonna Destra: Configurazione Progetto
+*   **Nome Progetto \*** (obbligatorio): già precompilato come "Nuovo Progetto - nome template", puoi cambiarlo.
+*   **Descrizione**: precompilata con la descrizione del template, modificabile.
 
 ### Creare il Progetto
-1. Compila il nome del progetto.
-2. Opzionalmente aggiungi una descrizione.
-3. Clicca **"Crea Progetto"** (icona razzo).
-4. LibrePM crea un progetto completamente configurato con tutti i task, le fasi e la struttura del template pre-popolati.
-5. Uno spinner e il testo "Creazione in corso..." appaiono durante il processo di creazione.
+1. Controlla o modifica il nome e la descrizione.
+2. Clicca **"Crea Progetto"** (icona razzo). Durante la creazione appare il testo "Creazione...".
+3. LibrePM crea il progetto con la struttura del template già pronta.
+4. Il nuovo progetto diventa il **progetto corrente** e vieni portato alla **Dashboard**.
 
-Dopo la creazione, vieni reindirizzato per iniziare a lavorare sul tuo nuovo progetto!
+Clicca **"Annulla"** per chiudere senza creare nulla.
 
 ---
 

@@ -83,9 +83,9 @@ export default function MenuPage({ shell }) {
                 try {
                     const tasks = await librepm.tasksList(p.id);
                     const total = tasks.length;
-                    const done = tasks.filter(t => t.status === "DONE").length;
+                    const done = tasks.filter(t => t.statusName === "DONE").length;
                     const overdue = tasks.filter(t => {
-                        if (!t.deadline || t.status === 'DONE') return false;
+                        if (!t.deadline || (t.statusName === 'DONE' || t.statusName === 'CANCELLED')) return false;
                         return new Date(t.deadline) < new Date();
                     }).length;
 
@@ -138,14 +138,9 @@ export default function MenuPage({ shell }) {
     };
 
     const handleUpdateProject = async (projectId, data) => {
-        try {
-            await librepm.projectsUpdate(projectId, data);
-            loadData();
-            // Aggiorna anche il progetto selezionato per riflettere le modifiche nella modale
-            setSelectedProject(prev => ({ ...prev, ...data }));
-        } catch (e) {
-            throw e; // Rilancia per gestire l'errore nella modale
-        }
+        await librepm.projectsUpdate(projectId, data);
+        loadData();
+        setSelectedProject(prev => ({ ...prev, ...data }));
     };
 
     const handleArchiveProject = async (project) => {

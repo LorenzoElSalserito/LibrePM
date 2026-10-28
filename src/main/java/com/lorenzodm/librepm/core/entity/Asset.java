@@ -11,7 +11,9 @@ import java.time.Instant;
 /**
  * Represents a file attachment or digital asset.
  * <p>
- * Assets are stored locally (e.g., in {@code data/assets/}) and their metadata is tracked here.
+ * File bytes are stored in the database ({@code asset_contents}, see
+ * {@link com.lorenzodm.librepm.service.AssetContentStore}) so every backend sharing the
+ * database can serve them; {@code data/assets/} is kept as a local cache.
  * They can be associated with a {@link User} (owner) and optionally linked to a {@link Task}.
  * Supports cloud synchronization via checksums for integrity verification.
  * </p>
@@ -73,6 +75,13 @@ public class Asset extends BaseSyncEntity {
 
     @Column(name = "updated_at")
     private Instant updatedAt;
+
+    /**
+     * Project the attachment belongs to (directly or through its task). Drives the
+     * membership checks that let collaborators on other PCs list and open the file.
+     */
+    @Column(name = "project_id", length = 36)
+    private String projectId;
 
     /**
      * Default constructor.
@@ -188,6 +197,14 @@ public class Asset extends BaseSyncEntity {
 
     public void setTask(Task task) {
         this.task = task;
+    }
+
+    public String getProjectId() {
+        return projectId;
+    }
+
+    public void setProjectId(String projectId) {
+        this.projectId = projectId;
     }
 
     @Override

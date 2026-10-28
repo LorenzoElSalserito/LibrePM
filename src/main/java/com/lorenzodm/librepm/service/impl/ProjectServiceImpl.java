@@ -82,6 +82,9 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public Project getOwned(String userId, String projectId) {
+        if (!projectRepository.existsById(projectId)) {
+            throw new ResourceNotFoundException("Project not found: " + projectId);
+        }
         // Verifica se l'utente è membro del progetto (non solo owner)
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
                 .orElseThrow(() -> new OwnershipViolationException("Non sei membro di questo progetto"));

@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.lorenzodm'
-version = '0.1.7'
+version = '0.2.0'
 java {
 	toolchain {
 		languageVersion = JavaLanguageVersion.of(21)
@@ -40,6 +40,7 @@ dependencies {
 
 	// Flyway
 	implementation 'org.flywaydb:flyway-core'
+	runtimeOnly 'org.flywaydb:flyway-mysql'
 
 	// Logging
 	implementation 'org.springframework.boot:spring-boot-starter-logging'

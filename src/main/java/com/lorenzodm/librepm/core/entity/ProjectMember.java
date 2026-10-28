@@ -1,8 +1,6 @@
 package com.lorenzodm.librepm.core.entity;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 
@@ -37,11 +35,9 @@ public class ProjectMember {
     @Column(name = "system_role_id", length = 36)
     private String systemRoleId;
 
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
 
@@ -108,5 +104,19 @@ public class ProjectMember {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // Hibernate's @CreationTimestamp/@UpdateTimestamp truncate to whole seconds on
+    // converter-mapped columns: same-second notes and messages lost their order.
+    @PrePersist
+    protected void initAuditTimestamps() {
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void refreshUpdatedAt() {
+        updatedAt = Instant.now();
     }
 }

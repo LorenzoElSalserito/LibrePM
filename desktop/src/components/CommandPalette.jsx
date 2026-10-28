@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { librepm } from "@api/librepm.js";
 import { useTranslation } from 'react-i18next';
 

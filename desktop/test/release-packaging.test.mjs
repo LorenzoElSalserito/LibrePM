@@ -57,7 +57,9 @@ test("MariaDB è configurabile solo lato amministratore e UI resta disabilitata"
   const settings = fs.readFileSync(path.join(desktopDir, "src/pages/SettingsPage.jsx"), "utf8");
   assert.match(gradle, /org\.mariadb\.jdbc:mariadb-java-client/);
   assert.match(yaml, /on-profile: mariadb/);
-  assert.match(yaml, /jdbc:mariadb:\/\/\$\{LIBREPM_DB_HOST\}/);
+  assert.match(yaml, /LIBREPM_DB_URL/);
+  assert.match(yaml, /sslMode=verify-full/);
+  assert.match(yaml, /jdbc:mariadb:\/\/\$\{LIBREPM_DB_HOST(?::localhost)?\}/);
   assert.match(yaml, /username: \$\{LIBREPM_DB_USERNAME\}/);
   assert.match(yaml, /password: \$\{LIBREPM_DB_PASSWORD\}/);
   assert.match(settings, /MariaDB \(External, administrator configuration\)/);

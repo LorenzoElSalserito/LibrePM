@@ -8,6 +8,44 @@ release le consolida nella nuova versione e nel changelog Debian.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-28
+
+LibrePM diventa collaborativo: note, messaggi e file condivisi tra i PC su database MariaDB comune, con import/export completi.
+
+- Fixed: Export e import funzionanti in entrambe le direzioni nell'app desktop: database .db (con validazione, backup e riavvio del backend), backup cifrato con nuovo ripristino, JSON e CSV da Integrazioni, export dal menu profilo.
+- Added: Export/import JSON portabile dell'intero spazio di lavoro, anche su database MariaDB condiviso; su MariaDB il trasferimento .db è disattivato con un avviso.
+- Added: File allegati a task e progetti condivisi tra i PC tramite il database (SQLite V64, MariaDB V3), con cache locale, limite 50 MB e notifica "Nuovo file" ai membri del progetto.
+- Added: Pannello allegati nell'editor task e card "File di progetto" in Dashboard; le notifiche aprono il file o la nota.
+- Fixed: Calendario, Dashboard, Analytics e menu progetti leggono stato e priorità reali dei task (colori, scaduti e completati corretti).
+- Fixed: "Aggiungi membro" in Risorse usava un ruolo inesistente.
+- Fixed: Messaggi mostrano il nome del mittente e sono tradotti in italiano e inglese.
+- Fixed: Titoli italiani dei capitoli 14–18 della guida; rimosse 67 chiavi di traduzione duplicate.
+- Changed: Design system condiviso blu/teal coerente con icona LibrePM, temi chiaro/scuro, superfici, focus tastiera, responsive e movimento ridotto.
+- Fixed: Gantt e Risorse restano accessibili anche con profilo personale; Impostazioni visibili nella navigazione.
+- Fixed: Lifecycle Gantt con contenitore DOM gestito dalla libreria e pulizia a ogni ricreazione; popup con escaping dei contenuti utente.
+- Added: Recupero locale degli errori di rendering senza perdere la navigazione.
+- Added: Messaggi di progetto persistenti con UI, feed paginato, polling, validazione e permessi OWNER/ADMIN/EDITOR/VIEWER; migrazione SQLite V63.
+- Added: Provisioning amministrativo MariaDB con `--provision-mariadb`, configurazione TLS e runbook per backend condiviso.
+- Added: URL API remoto HTTPS configurabile tramite `VITE_API_BASE_URL`, credenziali sessione e header CSRF nel client.
+- Fixed: Identità OAuth2 prevale sull'header utente; richieste con identità URL/header diversa dalla sessione vengono rifiutate.
+- Fixed: Permessi negati restituiscono HTTP 403, ResponseStatusException mantiene il proprio stato HTTP.
+- Fixed: Autologin usa il profilo scelto sul client prima dell’ultimo profilo condiviso dal backend.
+- Changed: Pagine caricate su richiesta con fallback accessibile; CI esegue test backend e browser prima del packaging.
+- Fixed: Cancellazione di task, note e progetti compatibile con optimistic locking; aggiunto endpoint DELETE progetto.
+- Changed: Logo renderer usa asset PNG esistente al posto dello SVG da oltre 8 MB.
+- Fixed: Backlink note task, download diagnostica/PDF e modifica valore risultati OKR.
+- Added: Migrazioni MariaDB incrementali con cronologia separata; import amministrativo eseguito prima di Flyway/JPA.
+- Added: Rapporto qualità con 23 test Java e 9 E2E browser/Electron, copertura e gate aperti.
+- Fixed: Avvio backend rispetta `LIBREPM_DATA_PATH` e system property del percorso dati.
+- Added: Test browser sulla build distribuita e test integrazione messaggistica/identità; PRD, piano di ricostruzione e rapporto qualità con copertura esplicita.
+- Changed: Wizard iniziale allineato al design system con animazioni di ingresso e transizioni tra i passaggi, rispettando il movimento ridotto.
+- Fixed: Wizard iniziale: punto spurio sul pulsante "Chiudi", card profilo con nomi lunghi, sovrapposizione lingua/logo su mobile, doppio anello di focus.
+- Fixed: Istanti salvati con precisione al microsecondo: note e messaggi scritti nello stesso secondo non escono più in ordine casuale (SQLite e MariaDB).
+- Fixed: MariaDB usa DATETIME(6) per tutte le date; migrazione `db/mariadb` V2 converte i database condivisi esistenti.
+- Fixed: Backlink e collegamenti note visibili solo ai membri del progetto; solo l'autore crea o elimina i collegamenti della propria nota.
+- Added: Test integrazione note e messaggi collaborativi con due backend su MariaDB reale; E2E del wizard iniziale.
+- Changed: Manuale utente IT/EN riallineato all'app, con nuovi capitoli Messaggi, Time Tracking e Database condiviso.
+
 ## [0.1.7] - 2026-09-10
 
 - Fixed: Aggiornamento pulito dai pacchetti `librepm-desktop` 0.1.2: il pacchetto RPM dichiara `Obsoletes: librepm-desktop < 0.1.6` e il pacchetto DEB dichiara `Conflicts`/`Replaces`/`Provides` sul vecchio nome, eliminando il conflitto sui file di `/opt/LibrePM`.

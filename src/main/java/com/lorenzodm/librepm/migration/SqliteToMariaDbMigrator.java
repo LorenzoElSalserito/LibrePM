@@ -97,9 +97,11 @@ public final class SqliteToMariaDbMigrator {
         for (Column column : columns) {
             if (column.primaryKeyOrder > 0) primary.add(column.name);
             boolean key = column.primaryKeyOrder > 0 || indexed.contains(column.name);
-            String definition = quote(column.name) + " " + mariaType(column, key);
+            String type = mariaType(column, key);
+            String definition = quote(column.name) + " " + type;
             if (column.notNull) definition += " NOT NULL";
             String defaultValue = mariaDefault(column.defaultValue);
+            if ("CURRENT_TIMESTAMP".equalsIgnoreCase(defaultValue) && type.equals("DATETIME(6)")) defaultValue = "CURRENT_TIMESTAMP(6)";
             if (defaultValue != null) definition += " DEFAULT " + defaultValue;
             if (column.autoIncrement) definition += " AUTO_INCREMENT";
             definitions.add(definition);
@@ -153,7 +155,9 @@ public final class SqliteToMariaDbMigrator {
         if (type.contains("DEC") || type.contains("NUM")) return "DECIMAL(38,10)";
         if (type.contains("BLOB")) return "LONGBLOB";
         if (type.startsWith("DATE") && !type.startsWith("DATETIME")) return "DATE";
-        if (type.startsWith("TIMESTAMP") || type.startsWith("DATETIME")) return "TIMESTAMP";
+        // Microsecond precision keeps collaborative feeds ordered; DATETIME avoids the 2038
+        // limit and the implicit ON UPDATE that older MariaDB servers add to TIMESTAMP.
+        if (type.startsWith("TIMESTAMP") || type.startsWith("DATETIME")) return "DATETIME(6)";
         if (type.startsWith("TIME")) return "TIME";
         var sizedText = Pattern.compile("(?:VAR)?CHAR\\s*\\((\\d+)\\)").matcher(type);
         if (sizedText.find()) return "VARCHAR(" + Math.min(Integer.parseInt(sizedText.group(1)), indexed ? 191 : 16383) + ")";

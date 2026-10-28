@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { librepm } from '@api/librepm.js';
 import { toast } from 'react-toastify';
 import { useTranslation } from 'react-i18next';
@@ -171,19 +171,9 @@ export default function StakeholderPage({ shell }) {
     const LEVELS = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
     const INTEREST_LEVELS = ['LOW', 'MEDIUM', 'HIGH'];
 
-    const levelToNum = (level) => {
-        const map = { LOW: 1, MEDIUM: 2, HIGH: 3, CRITICAL: 4 };
-        return map[level] || 1;
-    };
-
     const influenceColor = (level) => {
         const colors = { LOW: 'success', MEDIUM: 'info', HIGH: 'warning', CRITICAL: 'danger' };
         return colors[level] || 'secondary';
-    };
-
-    const commitStatusColor = (status) => {
-        const colors = { PROPOSED: 'secondary', AGREED: 'info', ACTIVE: 'success', COMPLETED: 'primary', WITHDRAWN: 'danger' };
-        return colors[status] || 'secondary';
     };
 
     const PARTNER_ROLES = ['COORDINATOR', 'PARTNER', 'ASSOCIATE', 'SUBCONTRACTOR'];

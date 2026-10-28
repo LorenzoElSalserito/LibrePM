@@ -25,7 +25,7 @@ async function exportToCsvFile(state, filePath, projectId) {
     await fs.writeFile(filePath, toCsv(tasks), "utf-8");
 }
 
-// Manteniamo anche gli IPC â€œvecchiâ€ (non eliminiamo funzionalitÃ )
+// Manteniamo anche gli IPC â€œvecchiâ€ (non eliminiamo funzionalitÃ )
 function registerExportIpc(ipcMain, _store, state) {
     ipcMain.handle("export:json", async (_evt, filePath) => {
         await exportToJsonFile(state, filePath);

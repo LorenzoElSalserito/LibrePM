@@ -110,7 +110,7 @@ export default function PlannerTable({
         }
         if (e.key === "ArrowRight") {
             // su input: solo se caret Ã¨ a fine
-            // per semplicitÃ : con CTRL+ArrowRight nav
+            // per semplicitÃ : con CTRL+ArrowRight nav
             if (e.ctrlKey) {
                 e.preventDefault();
                 moveBy(0, 1);

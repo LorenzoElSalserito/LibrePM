@@ -7,7 +7,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 
 /**
  * JPA Attribute Converter per Instant <-> String (SQLite TEXT)
@@ -25,7 +27,8 @@ import java.time.format.DateTimeParseException;
  * - yyyy-MM-dd HH:mm:ss.SSS (SQLite con millisecondi)
  * - Epoch milliseconds (es. "1769607872740")
  *
- * Formato scrittura: yyyy-MM-dd HH:mm:ss (compatibile SQLite)
+ * Formato scrittura: yyyy-MM-dd HH:mm:ss.SSSSSS (compatibile SQLite e DATETIME(6) MariaDB).
+ * I microsecondi mantengono l'ordine cronologico di note e messaggi scritti nello stesso secondo.
  *
  * @author Lorenzo DM
  * @since 0.3.1
@@ -35,8 +38,12 @@ public class InstantAttributeConverter implements AttributeConverter<Instant, St
 
     private static final DateTimeFormatter SQLITE_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter SQLITE_FORMAT_MS =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter SQLITE_FORMAT_US =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
+    private static final DateTimeFormatter SQLITE_FORMAT_FRACTION = new DateTimeFormatterBuilder()
+            .appendPattern("yyyy-MM-dd HH:mm:ss")
+            .optionalStart().appendFraction(ChronoField.NANO_OF_SECOND, 0, 9, true).optionalEnd()
+            .toFormatter();
     private static final DateTimeFormatter ISO_UTC_FORMAT =
             DateTimeFormatter.ISO_INSTANT;
 
@@ -45,9 +52,8 @@ public class InstantAttributeConverter implements AttributeConverter<Instant, St
         if (attribute == null) {
             return null;
         }
-        // Salva in formato SQLite standard: yyyy-MM-dd HH:mm:ss
         LocalDateTime ldt = LocalDateTime.ofInstant(attribute, ZoneOffset.UTC);
-        return ldt.format(SQLITE_FORMAT);
+        return ldt.format(SQLITE_FORMAT_US);
     }
 
     @Override
@@ -75,34 +81,15 @@ public class InstantAttributeConverter implements AttributeConverter<Instant, St
             // Continua con altri formati
         }
 
-        // 3. Prova formato SQLite standard (yyyy-MM-dd HH:mm:ss)
+        // 3. Prova formato SQLite, con o senza frazione di secondo (fino ai nanosecondi)
         try {
-            LocalDateTime ldt = LocalDateTime.parse(trimmed, SQLITE_FORMAT);
+            LocalDateTime ldt = LocalDateTime.parse(trimmed, SQLITE_FORMAT_FRACTION);
             return ldt.toInstant(ZoneOffset.UTC);
         } catch (DateTimeParseException e) {
             // Continua
         }
 
-        // 4. Prova formato SQLite con millisecondi (yyyy-MM-dd HH:mm:ss.SSS)
-        try {
-            LocalDateTime ldt = LocalDateTime.parse(trimmed, SQLITE_FORMAT_MS);
-            return ldt.toInstant(ZoneOffset.UTC);
-        } catch (DateTimeParseException e) {
-            // Continua
-        }
-
-        // 5. Prova con millisecondi variabili (rimuovi parte dopo il punto)
-        try {
-            if (trimmed.contains(".")) {
-                String withoutMs = trimmed.substring(0, trimmed.indexOf('.'));
-                LocalDateTime ldt = LocalDateTime.parse(withoutMs, SQLITE_FORMAT);
-                return ldt.toInstant(ZoneOffset.UTC);
-            }
-        } catch (Exception e) {
-            // Ignora
-        }
-
-        // 6. Prova solo data con ora implicita (yyyy-MM-dd)
+        // 4. Prova solo data con ora implicita (yyyy-MM-dd)
         try {
             if (trimmed.length() == 10) {
                 LocalDateTime ldt = LocalDateTime.parse(trimmed + " 00:00:00", SQLITE_FORMAT);

@@ -1,8 +1,41 @@
-import React, { useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useRef, useLayoutEffect } from 'react';
 import Gantt from 'frappe-gantt';
 import { useTranslation } from 'react-i18next';
 import 'frappe-gantt/dist/frappe-gantt.css';
 import './GanttChart.css';
+
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// Format date input preserving time when available.
+// Returns 'YYYY-MM-DD HH:mm' if time info exists, otherwise 'YYYY-MM-DD'.
+const formatDateStr = (dateInput) => {
+    if (!dateInput) return null;
+
+    // Date object → full datetime
+    if (dateInput instanceof Date) {
+        if (isNaN(dateInput.getTime())) return null;
+        const y = dateInput.getFullYear();
+        const m = String(dateInput.getMonth() + 1).padStart(2, '0');
+        const d = String(dateInput.getDate()).padStart(2, '0');
+        const hh = String(dateInput.getHours()).padStart(2, '0');
+        const mm = String(dateInput.getMinutes()).padStart(2, '0');
+        return `${y}-${m}-${d} ${hh}:${mm}`;
+    }
+
+    if (typeof dateInput === 'string') {
+        // Already YYYY-MM-DD HH:mm
+        if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(dateInput)) return dateInput.slice(0, 16);
+        // ISO with T separator
+        if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dateInput)) return dateInput.slice(0, 16).replace('T', ' ');
+        // Date-only string
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return dateInput;
+        // Try parsing anything else
+        const d = new Date(dateInput);
+        if (!isNaN(d.getTime())) return formatDateStr(d);
+    }
+    return null;
+};
+
 
 /**
  * GanttChart component using frappe-gantt (PRD-10-FR-004).
@@ -20,6 +53,8 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
     const containerRef = useRef(null);
     const ganttInstance = useRef(null);
 
+
+
     // Scroll the container so that "today" is horizontally centered
     const scrollToToday = () => {
         const container = containerRef.current;
@@ -29,38 +64,9 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
             const todayX = parseFloat(todayEl.getAttribute('x')) || 0;
             const todayW = parseFloat(todayEl.getAttribute('width')) || 0;
             const center = todayX + todayW / 2;
-            container.scrollLeft = center - container.clientWidth / 2;
+            const scroller = container.querySelector('.gantt-container') || container;
+            scroller.scrollLeft = center - scroller.clientWidth / 2;
         }
-    };
-
-    // Format date input preserving time when available.
-    // Returns 'YYYY-MM-DD HH:mm' if time info exists, otherwise 'YYYY-MM-DD'.
-    const formatDateStr = (dateInput) => {
-        if (!dateInput) return null;
-
-        // Date object → full datetime
-        if (dateInput instanceof Date) {
-            if (isNaN(dateInput.getTime())) return null;
-            const y = dateInput.getFullYear();
-            const m = String(dateInput.getMonth() + 1).padStart(2, '0');
-            const d = String(dateInput.getDate()).padStart(2, '0');
-            const hh = String(dateInput.getHours()).padStart(2, '0');
-            const mm = String(dateInput.getMinutes()).padStart(2, '0');
-            return `${y}-${m}-${d} ${hh}:${mm}`;
-        }
-
-        if (typeof dateInput === 'string') {
-            // Already YYYY-MM-DD HH:mm
-            if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(dateInput)) return dateInput.slice(0, 16);
-            // ISO with T separator
-            if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(dateInput)) return dateInput.slice(0, 16).replace('T', ' ');
-            // Date-only string
-            if (/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) return dateInput;
-            // Try parsing anything else
-            const d = new Date(dateInput);
-            if (!isNaN(d.getTime())) return formatDateStr(d);
-        }
-        return null;
     };
 
     useLayoutEffect(() => {
@@ -91,7 +97,7 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
 
                 const gTask = {
                     id: String(task.id),
-                    name: task.wbsCode ? `${task.wbsCode} ${task.title}` : task.title,
+                    name: escapeHtml(task.wbsCode ? `${task.wbsCode} ${task.title}` : task.title),
                     start: finalStart,
                     end: finalEnd,
                     progress: Math.min(Math.max(task.progress || 0, 0), 100),
@@ -105,7 +111,7 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
         });
 
         if (ganttTasks.length === 0) {
-            ganttRef.current.innerHTML = `<div class="text-center p-5 text-muted"><i class="bi bi-calendar-x fs-1 d-block mb-2"></i>${t('gantt.noTasks')}</div>`;
+            ganttRef.current.textContent = t('gantt.noTasks');
             return;
         }
 
@@ -126,6 +132,8 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
         // Clear previous content
         ganttRef.current.innerHTML = '';
 
+        let frame;
+        const host = ganttRef.current;
         try {
             // 3. Initialize Gantt
             let lang = 'en';
@@ -166,11 +174,11 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
                    return `
                      <div class="gantt-popup-wrapper">
                        <div class="popup-header">
-                         ${task.name}
+                         ${escapeHtml(originalTask?.wbsCode ? `${originalTask.wbsCode} ${originalTask.title}` : originalTask?.title)}
                          ${isCritical ? `<span class="badge bg-danger ms-2" style="font-size: 0.7em;">CRITICAL</span>` : ''}
                        </div>
                        <div class="popup-content">
-                         ${typeLabel ? `<div><strong>${t('Type')}:</strong> ${typeLabel}</div>` : ''}
+                         ${typeLabel ? `<div><strong>${t('Type')}:</strong> ${escapeHtml(typeLabel)}</div>` : ''}
                          <div><strong>${t('Start')}:</strong> ${startDate}</div>
                          <div><strong>${t('End')}:</strong> ${endDate}</div>
                          <div><strong>${t('Progress')}:</strong>
@@ -179,7 +187,7 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
                            </div>
                            <span class="ms-1">${task.progress}%</span>
                          </div>
-                         ${statusLabel ? `<div><strong>${t('Status')}:</strong> ${statusLabel}</div>` : ''}
+                         ${statusLabel ? `<div><strong>${t('Status')}:</strong> ${escapeHtml(statusLabel)}</div>` : ''}
                        </div>
                      </div>
                    `;
@@ -192,13 +200,18 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
             });
 
             // After render, scroll so today is centered
-            requestAnimationFrame(() => scrollToToday());
+            frame = requestAnimationFrame(() => scrollToToday());
 
         } catch (e) {
             console.error("Failed to initialize Gantt chart:", e);
-            ganttRef.current.innerHTML = `<div class="text-danger p-3">Error initializing Gantt: ${e.message}</div>`;
+            host.textContent = `Error initializing Gantt: ${e.message}`;
         }
 
+        return () => {
+            cancelAnimationFrame(frame);
+            ganttInstance.current = null;
+            host.replaceChildren();
+        };
     }, [tasks, viewMode, onTaskClick, t, i18n.language]);
 
     return (
@@ -225,10 +238,7 @@ export default function GanttChart({ tasks, viewMode = 'Week', onTaskClick }) {
                 className="gantt-container"
                 style={{ overflowX: 'auto' }}
             >
-                <svg
-                    ref={ganttRef}
-                    id="gantt"
-                ></svg>
+                <div ref={ganttRef} role="img" aria-label={t("Gantt Chart")} />
             </div>
         </div>
     );

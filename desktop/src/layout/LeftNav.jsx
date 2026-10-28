@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import Logo from "../assets/Logo.svg";
+import Logo from "../assets/icon.png";
 import { useTranslation } from 'react-i18next';
 
 /**
@@ -21,11 +21,11 @@ export default function LeftNav({ items, activeId, onSelect }) {
 
     // Filtra items visibili (nasconde settings dalla nav principale)
     const visibleItems = useMemo(() => {
-        return items.filter(item => item.id !== "settings");
+        return items;
     }, [items]);
 
     return (
-        <nav className={`jl-sidebar ${collapsed ? "collapsed" : ""}`}>
+        <nav aria-label={t("Main navigation")} className={`jl-sidebar ${collapsed ? "collapsed" : ""}`}>
             {/* Logo Header */}
             <div className="jl-sidebar-header">
                 <div className="jl-logo">
@@ -51,6 +51,9 @@ export default function LeftNav({ items, activeId, onSelect }) {
                         <li key={item.id} className="jl-nav-item">
                             <button
                                 className={`jl-nav-link ${activeId === item.id ? "active" : ""}`}
+                                aria-current={activeId === item.id ? "page" : undefined}
+                                data-page={item.id}
+                                aria-label={item.label}
                                 onClick={() => onSelect(item.id)}
                                 title={collapsed ? item.label : undefined}
                             >
@@ -74,7 +77,7 @@ export default function LeftNav({ items, activeId, onSelect }) {
 
                 {!collapsed && (
                     <div className="jl-sidebar-branding">
-                        <small className="text-muted">LibrePM • UI Shell</small>
+                        <small className="text-muted">Project Governance</small>
                     </div>
                 )}
             </div>
@@ -86,7 +89,7 @@ export default function LeftNav({ items, activeId, onSelect }) {
                     flex-direction: column;
                     width: 220px;
                     min-width: 220px;
-                    background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+                    background: var(--jl-sidebar-bg);
                     color: white;
                     transition: width 0.2s ease, min-width 0.2s ease;
                 }

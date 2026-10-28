@@ -57,5 +57,10 @@ local.properties
 *.log
 
 ### Project Files ###
-PLAN.md
-LibrePM_PRD.md
+
+### Browser test artifacts ###
+desktop/test-results/
+desktop/playwright-report/
+.env
+.env.*
+!.env.example

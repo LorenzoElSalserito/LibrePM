@@ -2,7 +2,6 @@ package com.lorenzodm.librepm.core.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -56,7 +55,6 @@ public class FocusSession {
     @Column(length = 50)
     private String sessionType = "FOCUS"; // FOCUS, BREAK, DEEP_WORK, etc. (futuro)
 
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -242,5 +240,13 @@ public class FocusSession {
                 ", durationMs=" + durationMs +
                 ", running=" + isRunning() +
                 '}';
+    }
+
+    // Hibernate's @CreationTimestamp/@UpdateTimestamp truncate to whole seconds on
+    // converter-mapped columns: same-second notes and messages lost their order.
+    @PrePersist
+    protected void initAuditTimestamps() {
+        Instant now = Instant.now();
+        createdAt = now;
     }
 }

@@ -1,0 +1,66 @@
+/* Shared brand system. Local fonts and assets keep installed clients offline-ready. */
+:root {
+    --jl-primary: #1a62a2;
+    --jl-primary-dark: #124a7c;
+    --jl-accent: #1a919a;
+    --jl-sidebar-bg: linear-gradient(165deg, #102d48, #102638 75%);
+    --jl-bg-primary: #f2f6fa;
+    --jl-text-primary: #172e43;
+    --jl-text-secondary: #53667b;
+    --jl-text-muted: #586c80;
+    --jl-border-color: #dce5ed;
+    --bs-primary: #1a62a2;
+    --bs-primary-rgb: 26, 98, 162;
+    --bs-link-color: #1a62a2;
+    --bs-border-radius: 0.65rem;
+}
+[data-theme="dark"], .jl-root.dark-theme {
+    --jl-bg-primary: #0d1926;
+    --jl-bg-secondary: #142434;
+    --jl-bg-card: #192c3e;
+    --jl-text-primary: #edf4fb;
+    --jl-text-secondary: #bacbdb;
+    --jl-text-muted: #a9bfd2;
+    --jl-border-color: #324b61;
+    --jl-input-bg: #132638;
+    --jl-input-border: #466077;
+    --bs-body-color: #edf4fb;
+    --bs-body-bg: #142434;
+}
+.jl-root { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; }
+.jl-root .jl-header { min-height: 76px; gap: 16px; flex-wrap: wrap; box-shadow: 0 1px 10px #102d4806; }
+.jl-header-title h1 { letter-spacing: -.025em; }
+.jl-header-actions { flex-wrap: wrap; min-width: 0; }
+.jl-root .jl-page { padding: 24px; min-width: 0; scrollbar-gutter: stable; }
+.jl-root .jl-sidebar-header { padding-block: 24px; }
+.jl-root .jl-nav-link { min-height: 40px; border-radius: 8px; margin-block: 2px; }
+.jl-root .jl-nav-link.active { background: #1a919a33; color: #fff; box-shadow: inset 3px 0 #56d5dc; }
+.jl-root .jl-nav-link:hover { background: #ffffff12; }
+.jl-root .card { background: var(--jl-bg-card); color: var(--jl-text-primary); border: 1px solid var(--jl-border-color); border-radius: 14px; box-shadow: 0 4px 20px #102d4806; }
+.jl-root .card-header { background: transparent; border-color: var(--jl-border-color); padding: 16px 20px; font-weight: 600; }
+.jl-root .btn-primary { --bs-btn-bg: #1a62a2; --bs-btn-border-color: #1a62a2; --bs-btn-hover-bg: #124a7c; --bs-btn-hover-border-color: #124a7c; --bs-btn-active-bg: #124a7c; --bs-btn-disabled-bg: #1a62a2; --bs-btn-disabled-border-color: #1a62a2; }
+.jl-root .btn-outline-primary { --bs-btn-color: #1a62a2; --bs-btn-border-color: #1a62a2; --bs-btn-hover-bg: #1a62a2; --bs-btn-hover-border-color: #1a62a2; }
+.jl-root .btn { min-height: 34px; font-weight: 500; }
+.jl-root .form-control, .jl-root .form-select { background-color: var(--jl-input-bg); color: var(--jl-text-primary); border-color: var(--jl-input-border); }
+.jl-root .table { --bs-table-color: var(--jl-text-primary); --bs-table-bg: var(--jl-bg-card); --bs-table-border-color: var(--jl-border-color); --bs-table-striped-bg: var(--jl-table-stripe); }
+.jl-root .table thead th { font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; padding-block: 14px; color: var(--jl-text-secondary); }
+.jl-root :is(button, a, input, select, textarea):focus-visible { outline: 3px solid var(--jl-accent); outline-offset: 3px; box-shadow: none; }
+.jl-root .text-muted { color: var(--jl-text-muted) !important; }
+[data-theme="dark"] .jl-root .text-dark { color: var(--jl-text-primary) !important; }
+[data-theme="dark"] .jl-root .btn-outline-primary { --bs-btn-color: #8ac8ff; --bs-btn-border-color: #8ac8ff; }
+.jl-root .gantt-outer { background: var(--jl-bg-card); border-color: var(--jl-border-color); border-radius: 14px; }
+.jl-root .gantt-container { --gantt-body-background: var(--jl-bg-card); --gantt-header-background: var(--jl-bg-secondary); --gantt-border-color: var(--jl-border-color); }
+.jl-root .gantt .lower-text, .jl-root .gantt .upper-text { fill: var(--jl-text-primary); }
+.jl-root .gantt .bar { fill: var(--jl-primary); }
+.jl-root .gantt .bar-progress { fill: var(--jl-accent); }
+@media (max-width: 900px) {
+    .jl-root .jl-page { padding: 14px; }
+    .jl-root .jl-header { padding: 12px 16px; }
+    .jl-header-actions { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+[data-theme="dark"] .jl-root .gantt-popup-wrapper { background: var(--jl-bg-card); color: var(--jl-text-primary); }
+[data-theme="dark"] .jl-root .gantt-popup-wrapper strong { color: var(--jl-text-secondary); }

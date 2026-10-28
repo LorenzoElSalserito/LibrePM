@@ -6,6 +6,7 @@ import FocusHeatmapWidget from "../components/FocusHeatmapWidget.jsx";
 import ProjectNotesWidget from "../components/ProjectNotesWidget.jsx";
 import EffortVarianceWidget from "../components/EffortVarianceWidget.jsx";
 import PendingApprovalsWidget from "../components/PendingApprovalsWidget.jsx";
+import AttachmentsPanel from "../components/AttachmentsPanel.jsx";
 import Modal from "../components/modal/Modal.jsx";
 import { useTranslation } from 'react-i18next';
 import { useModal } from "../hooks/useModal.js";
@@ -43,6 +44,12 @@ export default function Dashboard({ shell }) {
     const [selectedProjectId, setSelectedProjectId] = useState(shell?.currentProject?.id || "");
     const [showNoProjectsModal, setShowNoProjectsModal] = useState(false);
     const welcomeShown = useRef(false);
+
+    // A notification (e.g. a new project file) can ask to show a given project.
+    const navProjectId = shell?.navContext?.projectId;
+    useEffect(() => {
+        if (navProjectId) setSelectedProjectId(navProjectId);
+    }, [navProjectId]);
 
     // Setup shell
     useEffect(() => {
@@ -88,7 +95,7 @@ export default function Dashboard({ shell }) {
             for (const p of activeProjects) {
                 const pTasks = await librepm.tasksList(p.id);
                 const pOverdue = pTasks.filter(t => {
-                    if (!t.deadline || t.status === 'DONE') return false;
+                    if (!t.deadline || (t.statusName === 'DONE' || t.statusName === 'CANCELLED')) return false;
                     return new Date(t.deadline) < new Date();
                 });
 
@@ -109,7 +116,7 @@ export default function Dashboard({ shell }) {
 
             // 3. Calcola totali
             const overdue = allTasks.filter(t => {
-                if (!t.deadline || t.status === 'DONE') return false;
+                if (!t.deadline || (t.statusName === 'DONE' || t.statusName === 'CANCELLED')) return false;
                 return new Date(t.deadline) < new Date();
             });
 
@@ -117,7 +124,7 @@ export default function Dashboard({ shell }) {
                 totalProjects: activeProjects.length,
                 totalTasks: allTasks.length,
                 overdueTasks: overdue.length,
-                completedTasks: allTasks.filter(t => t.status === 'DONE').length
+                completedTasks: allTasks.filter(t => t.statusName === 'DONE').length
             });
 
             // Show "no projects" modal if empty
@@ -298,6 +305,17 @@ export default function Dashboard({ shell }) {
                 </div>
             </div>
 
+            {/* Project files: shared with members through the database */}
+            <div className="row g-4 mb-4">
+                <div className="col-12">
+                    <div className="card shadow-sm" data-testid="project-files-card">
+                        <div className="card-body">
+                            <AttachmentsPanel projectId={selectedProjectId || null} title={t("Project files")} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div className="row g-4 mb-4">
                 {/* Classifica Progetti Widget */}
                 <div className="col-md-6">
@@ -376,10 +394,10 @@ export default function Dashboard({ shell }) {
                                                 {t.projectName}
                                             </small>
                                             <span className={`badge ${
-                                                t.priority === 'HIGH' ? 'bg-danger' : 
-                                                t.priority === 'MED' ? 'bg-warning text-dark' : 'bg-secondary'
+                                                (t.priorityName === 'HIGH' || t.priorityName === 'CRITICAL') ? 'bg-danger' :
+                                                t.priorityName === 'MEDIUM' ? 'bg-warning text-dark' : 'bg-secondary'
                                             } scale-75`}>
-                                                {t.priority}
+                                                {t.priorityName}
                                             </span>
                                         </div>
                                     </div>

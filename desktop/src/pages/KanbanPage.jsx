@@ -48,7 +48,7 @@ const STATUS_ICONS = {
 // KanbanCard Component
 // ========================================
 
-function KanbanCard({ task, onStatusChange, onEdit, onDelete, onTimerToggle, runningTimers, t }) {
+function KanbanCard({ task, onEdit, onDelete, onTimerToggle, runningTimers, t }) {
     const [isDragging, setIsDragging] = useState(false);
 
     const priorityBg = task.priorityColor || "#6c757d";
@@ -277,7 +277,7 @@ export default function KanbanPage({ shell }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterPriority, setFilterPriority] = useState("");
+    const [filterPriority] = useState("");
     // Multi-timer: Map<taskId, session>
     const [runningTimers, setRunningTimers] = useState(new Map());
     const [showTaskModal, setShowTaskModal] = useState(false);

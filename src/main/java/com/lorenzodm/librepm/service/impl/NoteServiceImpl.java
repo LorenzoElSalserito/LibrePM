@@ -233,9 +233,15 @@ public class NoteServiceImpl implements NoteService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<Note> getBacklinks(String entityType, String entityId) {
+    public List<Note> getBacklinks(String userId, String entityType, String entityId) {
         NoteLink.LinkedEntityType type = NoteLink.LinkedEntityType.valueOf(entityType.toUpperCase());
-        return noteRepository.findByLinkedEntity(type, entityId);
+        // ANTI-IDOR: on a shared database only notes from the caller's projects are visible
+        Set<String> projectIds = projectMemberRepository.findByUserId(userId).stream()
+                .map(pm -> pm.getProject().getId())
+                .collect(Collectors.toSet());
+        return noteRepository.findByLinkedEntity(type, entityId).stream()
+                .filter(note -> projectIds.contains(note.getProjectId()))
+                .collect(Collectors.toList());
     }
 
     // =================================================================================

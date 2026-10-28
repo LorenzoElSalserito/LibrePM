@@ -217,3 +217,14 @@ This program is distributed in the hope that it will be useful, but WITHOUT ANY 
 You should have received a copy of the GNU Affero General Public License along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 See the [LICENSE](LICENSE) file for details.
+
+## UI, messaggistica e MariaDB
+
+Direzione aggiornata e requisiti: [PRD](LibrePM_PRD.md), [piano UI](reconstruction_ui.md).
+Messaggi di progetto disponibili dalla navigazione, con storico paginato e ruoli.
+Per provisioning e distribuzione MariaDB consultare [runbook](deploy/README.md).
+Evidenze e limiti delle verifiche sono registrati in [rapporto qualità](QUALITY_REPORT.md).
+
+Test browser: avviare backend isolato su `127.0.0.1:8080`, poi eseguire da `desktop`
+`npm run build` e `xvfb-run -a npm run test:e2e`. La suite crea dati di test: usare un percorso dati dedicato.
+Richiede browser Playwright (`npx playwright install --with-deps chromium`) e Xvfb su Linux; `CHROMIUM_PATH` opzionale per Chromium di sistema. I test usano il renderer compilato, senza mock delle API.

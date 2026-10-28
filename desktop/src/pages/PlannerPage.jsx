@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { librepm } from "@api/librepm.js";
 import { toast } from "react-toastify";
 import TaskEditorModal from "../components/TaskEditorModal.jsx";
@@ -33,8 +33,8 @@ export default function PlannerPage({ shell }) {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
-    const [filterStatus, setFilterStatus] = useState("");
-    const [filterPriority, setFilterPriority] = useState("");
+    const [filterStatus] = useState("");
+    const [filterPriority] = useState("");
 
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
@@ -122,6 +122,19 @@ export default function PlannerPage({ shell }) {
     useEffect(() => {
         loadTasks();
     }, [loadTasks]);
+
+    // Open the task requested by navigation (e.g. a notification or the command palette) once it is loaded.
+    const navTaskId = shell?.navContext?.taskId;
+    const openedNavTask = useRef(null);
+    useEffect(() => {
+        if (!navTaskId || openedNavTask.current === navTaskId) return;
+        const target = tasks.find((task) => task.id === navTaskId);
+        if (target) {
+            openedNavTask.current = navTaskId;
+            setSelectedTask(target);
+            setShowTaskModal(true);
+        }
+    }, [navTaskId, tasks]);
 
     // Handlers
     const handleSaveTask = async (taskData, uploadedFiles) => {

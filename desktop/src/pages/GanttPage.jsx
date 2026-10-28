@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'react-toastify';
 import { librepm } from '@api/librepm.js';
@@ -19,66 +19,18 @@ export default function GanttPage({ shell }) {
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [viewMode, setViewMode] = useState('Week');
-
-    // Force re-render when switching projects
-    useEffect(() => {
-        setTasks([]);
-        setLoading(true);
-        if (shell?.currentProject) {
-            loadGanttData();
-        } else {
-            setLoading(false);
-        }
-    }, [shell?.currentProject]);
-
-    useEffect(() => {
-        shell?.setTitle?.(t("Gantt Chart"));
-        shell?.setHeaderActions?.(
-            <div className="d-flex gap-2 align-items-center">
-                <select
-                    className="form-select form-select-sm"
-                    value={shell?.currentProject?.id || "__SELECT__"}
-                    onChange={(e) => {
-                        if (e.target.value === "__SELECT__") {
-                            shell?.navigate?.("menu");
-                        } else {
-                            const project = shell?.projects?.find(p => p.id === e.target.value);
-                            shell?.setCurrentProject?.(project);
-                        }
-                    }}
-                    style={{ width: 200 }}
-                >
-                    <option value="__SELECT__">{t("Select project...")}</option>
-                    {shell?.projects?.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                </select>
-                <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => { setSelectedTask(null); setShowTaskModal(true); }}
-                    disabled={!shell?.currentProject}
-                >
-                    <i className="bi bi-plus-lg me-1"></i>
-                    {t("Task")}
-                </button>
-                <button
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={loadGanttData}
-                    title={t("Refresh")}
-                >
-                    <i className="bi bi-arrow-clockwise"></i>
-                </button>
-            </div>
-        );
-
-        return () => {
-            shell?.setHeaderActions?.(null);
-        };
-    }, [shell, t]);
+    const [error, setError] = useState('');
+    const requestSequence = useRef(0);
+    const projectId = shell?.currentProject?.id;
+    const activeProject = useRef(projectId);
+    activeProject.current = projectId;
 
     const loadGanttData = useCallback(async () => {
         if (!shell?.currentProject) return;
+        const sequence = ++requestSequence.current;
+        const requestedProject = projectId;
         setLoading(true);
+        setError('');
         try {
             let ganttData = [];
             try {
@@ -157,14 +109,70 @@ export default function GanttPage({ shell }) {
                 };
             });
 
-            setTasks(processedData);
+            if (sequence === requestSequence.current && activeProject.current === requestedProject) setTasks(processedData);
         } catch (e) {
             console.error("Error loading Gantt data:", e);
-            toast.error(t("Error loading Gantt data"));
+            if (sequence === requestSequence.current && activeProject.current === requestedProject) setError(e.message || t("Error loading Gantt data"));
         } finally {
+            if (sequence === requestSequence.current && activeProject.current === requestedProject) setLoading(false);
+        }
+    }, [shell?.currentProject, projectId, t]);
+
+    // Force re-render when switching projects
+    useEffect(() => {
+        setTasks([]);
+        setLoading(true);
+        if (projectId) {
+            loadGanttData();
+        } else {
             setLoading(false);
         }
-    }, [shell?.currentProject, t]);
+    }, [projectId, loadGanttData]);
+
+    useEffect(() => {
+        shell?.setTitle?.(t("Gantt Chart"));
+        shell?.setHeaderActions?.(
+            <div className="d-flex gap-2 align-items-center">
+                <select
+                    className="form-select form-select-sm"
+                    value={shell?.currentProject?.id || "__SELECT__"}
+                    onChange={(e) => {
+                        if (e.target.value === "__SELECT__") {
+                            shell?.navigate?.("menu");
+                        } else {
+                            const project = shell?.projects?.find(p => p.id === e.target.value);
+                            shell?.setCurrentProject?.(project);
+                        }
+                    }}
+                    style={{ width: 200 }}
+                >
+                    <option value="__SELECT__">{t("Select project...")}</option>
+                    {shell?.projects?.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                </select>
+                <button
+                    className="btn btn-sm btn-primary"
+                    onClick={() => { setSelectedTask(null); setShowTaskModal(true); }}
+                    disabled={!shell?.currentProject}
+                >
+                    <i className="bi bi-plus-lg me-1"></i>
+                    {t("Task")}
+                </button>
+                <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={loadGanttData}
+                    title={t("Refresh")}
+                >
+                    <i className="bi bi-arrow-clockwise"></i>
+                </button>
+            </div>
+        );
+
+        return () => {
+            shell?.setHeaderActions?.(null);
+        };
+    }, [shell, t, loadGanttData]);
 
     const handleTaskClick = (task) => {
         setSelectedTask(task);
@@ -203,6 +211,7 @@ export default function GanttPage({ shell }) {
 
     return (
         <div className="gantt-page p-3">
+            {error && <div className="alert alert-danger" role="alert">{error}<button className="btn btn-sm btn-outline-danger ms-3" onClick={loadGanttData}>{t("Retry")}</button></div>}
             {/* Toolbar row */}
             <div className="d-flex justify-content-between align-items-center mb-3">
                 <div className="d-flex align-items-center gap-3">
@@ -236,6 +245,7 @@ export default function GanttPage({ shell }) {
                         {['Day', 'Week', 'Month'].map(mode => (
                             <button
                                 key={mode}
+                                data-view-mode={mode}
                                 className={`btn ${viewMode === mode ? 'btn-white text-dark fw-bold' : 'btn-light text-muted'}`}
                                 onClick={() => setViewMode(mode)}
                                 style={{ minWidth: '80px' }}
@@ -284,6 +294,7 @@ export default function GanttPage({ shell }) {
                     task={selectedTask}
                     projectId={shell.currentProject.id}
                     onSave={handleSaveTask}
+                    onNavigateToNote={(note) => shell.navigate("notes", { noteId: note.id })}
                 />
             )}
         </div>

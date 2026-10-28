@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { librepm } from "@api/librepm.js";
-import Logo from "../assets/Logo.svg";
+import Logo from "../assets/icon.png";
 import { useTranslation } from 'react-i18next';
 import { useModal } from '../hooks/useModal';
 
@@ -17,7 +17,7 @@ import { useModal } from '../hooks/useModal';
  * @since 0.3.0
  * @version 0.1.0
  */
-export default function OnboardingPage({ onProfileSelected, bootstrapData, onRetry }) {
+export default function OnboardingPage({ onProfileSelected, bootstrapData }) {
     const { t, i18n } = useTranslation();
     const modal = useModal();
     // ========================================
@@ -382,7 +382,7 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
             </p>
 
             <div className="d-flex flex-column gap-2 mb-4">
-                {wsProfiles.map(profile => {
+                {wsProfiles.map((profile, index) => {
                     let modules = {};
                     try {
                         modules = typeof profile.modulesJson === 'string'
@@ -397,6 +397,7 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                         <div
                             key={profile.id}
                             className="profile-card"
+                            style={{ "--stagger": index }}
                             onClick={() => handleSelectWorkspaceProfile(profile.id)}
                             role="button"
                             tabIndex={0}
@@ -453,10 +454,11 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
             </h4>
 
             <div className="profiles-grid mb-4">
-                {localUsers.map((user) => (
+                {localUsers.map((user, index) => (
                     <div
                         key={user.id}
                         className={`profile-card ${user.id === lastUserId ? "last-used" : ""} ${selectedUserId === user.id ? "selected" : ""}`}
+                        style={{ "--stagger": index }}
                         onClick={() => {
                             if (selectedUserId === user.id) return;
                             setSelectedUserId(user.id);
@@ -811,11 +813,12 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
     // ========================================
 
     return (
-        <div className="onboarding-page">
+        <div className="jl-root onboarding-page">
+            <div className="onboarding-backdrop" aria-hidden="true"></div>
             <div className="onboarding-container">
                 {/* Language Switcher */}
                 <div className="position-absolute top-0 end-0 p-3">
-                    <div className="btn-group btn-group-sm" role="group">
+                    <div className="btn-group btn-group-sm onboarding-lang" role="group" aria-label="Language">
                         <button 
                             type="button" 
                             className={`btn ${i18n.language === 'it' ? 'btn-primary' : 'btn-outline-primary'}`}
@@ -836,24 +839,15 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                 {/* Header */}
                 <div className="onboarding-header text-center mb-4">
                     <div className="onboarding-logo mb-3">
-                        <img 
-                            src={Logo} 
-                            alt="LibrePM Logo" 
-                            style={{ 
-                                width: "80px", 
-                                height: "80px",
-                                borderRadius: "16px", // Smussamento angoli
-                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
-                            }} 
-                        />
+                        <img src={Logo} alt="LibrePM Logo" />
                     </div>
-                    <h2 className="fw-bold">LibrePM</h2>
+                    <h2 className="onboarding-title">LibrePM</h2>
                     <p className="text-muted">{t("Project Management Suite")}</p>
                 </div>
 
                 {/* Error Alert */}
                 {error && (
-                    <div className="alert alert-danger d-flex align-items-center mb-4">
+                    <div className="alert alert-danger d-flex align-items-center mb-4 onboarding-alert" role="alert">
                         <i className="bi bi-exclamation-triangle-fill me-2"></i>
                         <div className="flex-grow-1">{error}</div>
                         <button
@@ -861,14 +855,13 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                             className="btn btn-sm btn-outline-danger"
                             onClick={() => setError(null)}
                         >
-.
                             {t("Close")}
                         </button>
                     </div>
                 )}
 
                 {/* Content */}
-                <div className="onboarding-content">
+                <div className="onboarding-content" key={view}>
                     {loading && view === "list" && !selectedUserId ? (
                         <div className="text-center py-4">
                             <div className="spinner-border text-primary mb-3"></div>
@@ -887,7 +880,7 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
 
             </div>
 
-            {/* Stili inline per questa pagina */}
+            {/* Stili della pagina: token brand da premium.css / librepm-shell.css */}
             <style>{`
                 html, body, #root {
                     overflow: auto !important;
@@ -895,135 +888,305 @@ export default function OnboardingPage({ onProfileSelected, bootstrapData, onRet
                 }
 
                 .onboarding-page {
+                    --ob-ease: cubic-bezier(.22, 1, .36, 1);
+                    --ob-radius: 20px;
                     min-height: 100vh;
                     display: flex;
                     align-items: flex-start;
                     justify-content: center;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    padding: 20px;
+                    background: var(--jl-sidebar-bg);
+                    padding: 24px 16px;
                     position: relative;
                     z-index: 1;
-                    overflow-y: auto;
+                    overflow: hidden auto;
+                    isolation: isolate;
+                }
+
+                /* Bagliori soffusi del brand, deriva lenta */
+                .onboarding-backdrop {
+                    position: fixed;
+                    inset: -20%;
+                    z-index: -1;
+                    pointer-events: none;
+                    background:
+                        radial-gradient(40% 35% at 20% 25%, rgba(26, 145, 154, .28), transparent 70%),
+                        radial-gradient(45% 40% at 85% 80%, rgba(26, 98, 162, .35), transparent 70%);
+                    animation: ob-drift 24s ease-in-out infinite alternate;
                 }
 
                 .onboarding-container {
-                    background: white;
-                    border-radius: 16px;
+                    background: var(--jl-bg-card);
+                    color: var(--jl-text-primary);
+                    border: 1px solid rgba(255, 255, 255, .08);
+                    border-radius: var(--ob-radius);
                     padding: 40px;
                     max-width: 480px;
                     width: 100%;
-                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    box-shadow: 0 1px 2px rgba(16, 45, 72, .08), 0 24px 64px rgba(6, 20, 34, .45);
                     position: relative;
                     z-index: 2;
                     margin: auto 0;
+                    animation: ob-rise .6s var(--ob-ease) backwards;
                 }
-                
+
+                .onboarding-lang .btn {
+                    min-width: 40px;
+                    font-weight: 600;
+                    letter-spacing: .04em;
+                    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+                }
+
+                .onboarding-header {
+                    animation: ob-fade-up .6s var(--ob-ease) .12s backwards;
+                }
+
+                .onboarding-logo img {
+                    width: 80px;
+                    height: 80px;
+                    border-radius: 18px;
+                    box-shadow: 0 8px 24px rgba(16, 45, 72, .18);
+                    animation: ob-pop .7s var(--ob-ease) .18s backwards;
+                }
+
+                .onboarding-title {
+                    font-weight: 700;
+                    letter-spacing: -.025em;
+                    color: var(--jl-text-primary);
+                    margin-bottom: 4px;
+                }
+
+                .onboarding-content {
+                    animation: ob-view-in .42s var(--ob-ease) backwards;
+                }
+
+                .onboarding-content h4 {
+                    font-size: 1.15rem;
+                    font-weight: 600;
+                    letter-spacing: -.01em;
+                    color: var(--jl-text-primary);
+                }
+
+                .onboarding-content h4 .bi {
+                    color: var(--jl-primary);
+                }
+
+                .onboarding-alert {
+                    border-radius: 12px;
+                    animation: ob-fade-up .3s var(--ob-ease) backwards;
+                }
+
+                .onboarding-page .form-control {
+                    border-radius: 10px;
+                    transition: border-color .2s ease, box-shadow .2s ease;
+                }
+
+                .onboarding-page .form-control:focus-visible {
+                    outline: none;
+                }
+
+                .onboarding-page .form-control:focus {
+                    border-color: var(--jl-primary);
+                    box-shadow: 0 0 0 3px rgba(26, 98, 162, .16);
+                }
+
+                .onboarding-page .btn {
+                    border-radius: 10px;
+                    transition: background-color .2s ease, border-color .2s ease, color .2s ease, box-shadow .2s ease, transform .15s ease;
+                }
+
+                .onboarding-page .btn-primary:not(:disabled):hover {
+                    box-shadow: 0 6px 16px rgba(26, 98, 162, .28);
+                }
+
+                .onboarding-page .btn:not(:disabled):active {
+                    transform: translateY(1px);
+                }
+
+                .onboarding-page .input-group > .form-control {
+                    border-radius: 10px 0 0 10px;
+                }
+
+                .onboarding-page .input-group > .btn {
+                    border-radius: 0 10px 10px 0;
+                }
+
                 .profiles-grid {
                     display: flex;
                     flex-direction: column;
                     gap: 12px;
                 }
-                
+
                 .profile-card {
                     display: flex;
                     flex-wrap: wrap;
                     align-items: center;
                     gap: 16px;
                     padding: 16px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 12px;
+                    background: var(--jl-bg-card);
+                    border: 1px solid var(--jl-border-color);
+                    border-radius: 14px;
                     cursor: pointer;
-                    transition: all 0.2s ease;
                     position: relative;
+                    transition: border-color .25s ease, background-color .25s ease, box-shadow .25s ease, transform .25s var(--ob-ease);
+                    animation: ob-fade-up .45s var(--ob-ease) backwards;
+                    animation-delay: calc(80ms + var(--stagger, 0) * 55ms);
                 }
-                
+
                 .profile-card:hover {
-                    border-color: #667eea;
-                    background: #f8f9fa;
+                    border-color: var(--jl-primary);
+                    box-shadow: 0 6px 18px rgba(16, 45, 72, .08);
+                    transform: translateY(-1px);
                 }
-                
-                .profile-card.selected {
-                    border-color: #667eea;
-                    background: #f8f9fa;
-                    cursor: default;
+
+                .profile-card:focus-visible {
+                    outline: 3px solid var(--jl-accent);
+                    outline-offset: 3px;
                 }
 
                 .profile-card.last-used {
-                    border-color: #667eea;
-                    background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+                    border-color: rgba(26, 98, 162, .45);
+                    background: linear-gradient(135deg, rgba(26, 98, 162, .05), rgba(26, 145, 154, .05));
                 }
-                
+
+                .profile-card.selected {
+                    border-color: var(--jl-primary);
+                    background: var(--jl-bg-card);
+                    box-shadow: 0 0 0 3px rgba(26, 98, 162, .12), 0 8px 24px rgba(16, 45, 72, .08);
+                    transform: none;
+                    cursor: default;
+                }
+
                 .profile-avatar {
                     width: 48px;
                     height: 48px;
                     border-radius: 50%;
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    background: linear-gradient(135deg, var(--jl-primary), var(--jl-accent));
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     flex-shrink: 0;
+                    box-shadow: 0 4px 10px rgba(26, 98, 162, .2);
                 }
-                
+
                 .profile-avatar img {
                     width: 100%;
                     height: 100%;
                     border-radius: 50%;
                     object-fit: cover;
                 }
-                
+
                 .avatar-initials {
-                    color: white;
+                    color: #fff;
                     font-weight: 600;
                     font-size: 16px;
                 }
-                
+
                 .profile-info {
-                    flex-grow: 1;
+                    flex: 1 1 0;
                     min-width: 0;
                 }
-                
+
+                .profile-name,
+                .onboarding-profiles .profile-username {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
+                }
+
                 .profile-name {
                     font-weight: 600;
-                    color: #212529;
+                    color: var(--jl-text-primary);
                 }
-                
+
                 .profile-actions {
                     display: flex;
                     align-items: center;
                     gap: 8px;
                     margin-left: auto;
                 }
-                
+
                 .delete-btn {
                     opacity: 0;
-                    transition: opacity 0.2s ease;
+                    transition: opacity .2s ease;
                     padding: 4px 8px;
                 }
-                
-                .profile-card:hover .delete-btn {
+
+                .profile-card:hover .delete-btn,
+                .profile-card:focus-within .delete-btn {
                     opacity: 1;
                 }
-                
+
                 .profile-select-icon {
-                    color: #adb5bd;
-                    transition: transform 0.2s ease;
+                    color: var(--jl-text-muted);
+                    transition: transform .25s var(--ob-ease), color .25s ease;
                 }
-                
-                .profile-card:hover .profile-select-icon {
+
+                .profile-card:hover .profile-select-icon,
+                .profile-card.selected .profile-select-icon {
                     transform: translateX(4px);
-                    color: #667eea;
+                    color: var(--jl-primary);
+                }
+
+                .profile-card.selected .profile-select-icon {
+                    transform: rotate(90deg);
                 }
 
                 .profile-login-form {
+                    flex-basis: 100%;
                     width: 100%;
-                    margin-top: 12px;
-                    padding-top: 12px;
-                    border-top: 1px solid #e9ecef;
+                    margin-top: 4px;
+                    padding-top: 16px;
+                    border-top: 1px solid var(--jl-border-color);
+                    animation: ob-expand .35s var(--ob-ease) backwards;
                 }
-                
+
+                @keyframes ob-rise {
+                    from { opacity: 0; transform: translateY(24px) scale(.985); }
+                    to { opacity: 1; transform: none; }
+                }
+
+                @keyframes ob-fade-up {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: none; }
+                }
+
+                @keyframes ob-pop {
+                    from { opacity: 0; transform: scale(.88); }
+                    to { opacity: 1; transform: none; }
+                }
+
+                @keyframes ob-view-in {
+                    from { opacity: 0; transform: translateX(12px); }
+                    to { opacity: 1; transform: none; }
+                }
+
+                @keyframes ob-expand {
+                    from { opacity: 0; transform: translateY(-6px); }
+                    to { opacity: 1; transform: none; }
+                }
+
+                @keyframes ob-drift {
+                    from { transform: translate3d(0, 0, 0) rotate(0deg); }
+                    to { transform: translate3d(4%, -3%, 0) rotate(8deg); }
+                }
+
                 @media (max-width: 480px) {
                     .onboarding-container {
-                        padding: 24px;
+                        padding: 56px 20px 24px;
+                        border-radius: 16px;
+                    }
+
+                    .profile-card {
+                        gap: 12px;
+                        padding: 14px;
+                    }
+                }
+
+                @media (prefers-reduced-motion: reduce) {
+                    .onboarding-page *,
+                    .onboarding-backdrop {
+                        animation: none !important;
+                        transition: none !important;
                     }
                 }
             `}</style>

@@ -5,8 +5,8 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -38,7 +38,6 @@ public abstract class BaseSyncEntity {
      * Timestamp of when the entity was first created.
      * Managed automatically by Hibernate.
      */
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -46,7 +45,6 @@ public abstract class BaseSyncEntity {
      * Timestamp of the last modification.
      * Critical for LWW conflict resolution strategy.
      */
-    @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
 
@@ -168,5 +166,19 @@ public abstract class BaseSyncEntity {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    // Hibernate's @CreationTimestamp/@UpdateTimestamp truncate to whole seconds on
+    // converter-mapped columns: same-second notes and messages lost their order.
+    @PrePersist
+    protected void initAuditTimestamps() {
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void refreshUpdatedAt() {
+        updatedAt = Instant.now();
     }
 }

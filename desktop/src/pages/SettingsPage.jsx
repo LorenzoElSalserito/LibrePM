@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { librepm } from "@api/librepm.js";
 import { toast } from "react-toastify";
 import { useTranslation } from 'react-i18next';
 import { useModal } from "../hooks/useModal.js";
 import NotificationPreferencesPanel from "../components/NotificationPreferencesPanel.jsx";
+import { useDataTransfer } from "../hooks/useDataTransfer.js";
+import { TransferStatus, TransferLabel } from "../components/DataTransferStatus.jsx";
 
 const DONATION_URL = "https://www.paypal.com/paypalme/lorenzodemarco92";
 
@@ -27,6 +29,7 @@ const DONATION_URL = "https://www.paypal.com/paypalme/lorenzodemarco92";
 export default function SettingsPage({ shell }) {
     const { t, i18n } = useTranslation();
     const modal = useModal();
+    const transfer = useDataTransfer();
     const currentUser = shell?.currentUser;
 
     // ========================================
@@ -211,75 +214,6 @@ export default function SettingsPage({ shell }) {
         } catch (e) {
             console.error("[SettingsPage] Errore reset:", e);
             toast.error(t("Error resetting settings") + ": " + e.message);
-        }
-    };
-
-    const handleExportDb = async () => {
-        try {
-            if (librepm.isElectron()) {
-                const result = await window.librepm.ipc.invoke('db:export');
-                if (result.success) {
-                    toast.success(`${t("Database exported to")}: ${result.path}`);
-                } else if (result.error) {
-                    toast.error(t("Export error") + ": " + result.error);
-                }
-            } else {
-                try {
-                    const blob = await librepm.exportDatabase();
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `librepm-backup-${new Date().toISOString().split("T")[0]}.db`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast.success(t("Database downloaded"));
-                } catch (e) {
-                    await librepm.exportJsonDialog();
-                    toast.success(t("Database exported (JSON)"));
-                }
-            }
-        } catch (e) {
-            console.error("[SettingsPage] Errore export:", e);
-            toast.error(t("Export error") + ": " + e.message);
-        }
-    };
-
-    const handleImportDb = async () => {
-        const confirmed = await modal.confirm({ title: t("WARNING: Importing will overwrite ALL current data. Do you want to continue?") });
-        if (!confirmed) {
-            return;
-        }
-
-        try {
-            if (librepm.isElectron()) {
-                const result = await window.librepm.ipc.invoke('db:import');
-                if (result.success) {
-                    toast.success(t("Database imported. Restarting application..."));
-                    setTimeout(() => window.location.reload(), 2000);
-                } else if (result.error) {
-                    toast.error(t("Import error") + ": " + result.error);
-                }
-            } else {
-                const input = document.createElement("input");
-                input.type = "file";
-                input.accept = ".db,.sqlite";
-                input.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                        try {
-                            await librepm.importDatabase(file);
-                            toast.success(t("Database imported. Reload the page."));
-                            setTimeout(() => window.location.reload(), 2000);
-                        } catch (err) {
-                            toast.error(t("Import error") + ": " + err.message);
-                        }
-                    }
-                };
-                input.click();
-            }
-        } catch (e) {
-            console.error("[SettingsPage] Errore import:", e);
-            toast.error(t("Import error") + ": " + e.message);
         }
     };
 
@@ -607,7 +541,9 @@ export default function SettingsPage({ shell }) {
                 <div className="card-body">
                     <div className="alert alert-info small">
                         <i className="bi bi-info-circle me-2"></i>
-                        {t("You are currently using the local SQLite database.")}
+                        {transfer.caps.engine === "mariadb"
+                            ? t("This workspace uses a shared MariaDB database configured by the administrator.")
+                            : t("You are currently using the local SQLite database.")}
                     </div>
                     <div className="row g-3">
                         <div className="col-md-6">
@@ -650,57 +586,76 @@ export default function SettingsPage({ shell }) {
                         </label>
                     </div>
 
-                    <div className="d-flex gap-2 flex-wrap">
-                        <button className="btn btn-outline-primary" onClick={handleExportDb}>
-                            <i className="bi bi-box-arrow-up me-2"></i>
-                            {t("Export Database (.db)")}
-                        </button>
+                    <TransferStatus busy={transfer.busy} />
 
-                        <button className="btn btn-outline-danger" onClick={handleImportDb}>
-                            <i className="bi bi-box-arrow-in-down me-2"></i>
-                            {t("Import Database (.db)")}
+                    <h6 className="mb-1"><i className="bi bi-database me-2" aria-hidden="true"></i>{t("Database file (.db)")}</h6>
+                    <p className="small text-muted mb-2">
+                        {t("Full copy of the local database, including every profile. Restoring replaces all current data; a backup of the current database is kept.")}
+                    </p>
+                    {!transfer.caps.loading && !transfer.caps.fileTransferSupported && (
+                        <div className="alert alert-warning small py-2" role="note" data-testid="db-transfer-unavailable">
+                            <i className="bi bi-info-circle me-2" aria-hidden="true"></i>
+                            {t("Database file backups are not available with the shared database. Use the JSON export/import in Integrations instead.")}
+                        </div>
+                    )}
+                    <div className="d-flex gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            className="btn btn-outline-primary"
+                            onClick={transfer.exportDb}
+                            disabled={!!transfer.busy || !transfer.caps.fileTransferSupported}
+                            data-testid="settings-export-db"
+                        >
+                            <TransferLabel active={transfer.busy === "exportDb"} icon="bi-box-arrow-up">{t("Export Database (.db)")}</TransferLabel>
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline-danger"
+                            onClick={transfer.importDb}
+                            disabled={!!transfer.busy || !transfer.caps.fileTransferSupported}
+                            data-testid="settings-import-db"
+                        >
+                            <TransferLabel active={transfer.busy === "importDb"} icon="bi-box-arrow-in-down">{t("Import Database (.db)")}</TransferLabel>
                         </button>
                     </div>
 
                     <hr />
-                    <h6 className="mb-3"><i className="bi bi-shield-lock me-2"></i>{t("Encrypted Export")}</h6>
+                    <h6 className="mb-1"><i className="bi bi-shield-lock me-2" aria-hidden="true"></i>{t("Encrypted backup")}</h6>
+                    <p className="small text-muted mb-2">
+                        {t("The export will be encrypted with AES-256-GCM. Keep the passphrase safe.")}{" "}
+                        {t("To restore it, enter the same passphrase and choose Import encrypted backup.")}
+                    </p>
                     <div className="row g-2 align-items-end">
-                        <div className="col-auto">
+                        <div className="col-12 col-sm-auto">
+                            <label htmlFor="encryptPassphrase" className="form-label small mb-1">{t("Passphrase")}</label>
                             <PasswordInput
                                 id="encryptPassphrase"
                                 visibilityKey="encrypt-passphrase"
                                 placeholder={t("Passphrase")}
-                                width={220}
+                                width={240}
                             />
                         </div>
-                        <div className="col-auto">
-                            <button className="btn btn-outline-warning btn-sm" onClick={async () => {
-                                const passphrase = document.getElementById("encryptPassphrase").value;
-                                if (!passphrase || passphrase.length < 4) {
-                                    toast.error(t("Passphrase must be at least 4 characters"));
-                                    return;
-                                }
-                                try {
-                                    const result = await librepm.dbExportEncrypted(passphrase);
-                                    const blob = new Blob([JSON.stringify(result)], { type: "application/json" });
-                                    const a = document.createElement("a");
-                                    a.href = URL.createObjectURL(blob);
-                                    a.download = `librepm-encrypted-${new Date().toISOString().split("T")[0]}.enc.json`;
-                                    a.click();
-                                    URL.revokeObjectURL(a.href);
-                                    toast.success(t("Encrypted export completed"));
-                                } catch (e) {
-                                    toast.error(t("Export error") + ": " + e.message);
-                                }
-                            }}>
-                                <i className="bi bi-lock me-1"></i>
-                                {t("Export Encrypted")}
+                        <div className="col-auto d-flex gap-2 flex-wrap">
+                            <button
+                                type="button"
+                                className="btn btn-outline-warning btn-sm"
+                                disabled={!!transfer.busy || !transfer.caps.fileTransferSupported}
+                                data-testid="settings-export-encrypted"
+                                onClick={() => transfer.exportEncrypted(document.getElementById("encryptPassphrase")?.value || "")}
+                            >
+                                <TransferLabel active={transfer.busy === "exportEncrypted"} icon="bi-lock">{t("Export Encrypted")}</TransferLabel>
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline-danger btn-sm"
+                                disabled={!!transfer.busy || !transfer.caps.fileTransferSupported}
+                                data-testid="settings-import-encrypted"
+                                onClick={() => transfer.importEncrypted(document.getElementById("encryptPassphrase")?.value || "")}
+                            >
+                                <TransferLabel active={transfer.busy === "importEncrypted"} icon="bi-unlock">{t("Import encrypted backup")}</TransferLabel>
                             </button>
                         </div>
                     </div>
-                    <small className="text-muted d-block mt-1">
-                        {t("The export will be encrypted with AES-256-GCM. Keep the passphrase safe.")}
-                    </small>
                 </div>
             </div>
 

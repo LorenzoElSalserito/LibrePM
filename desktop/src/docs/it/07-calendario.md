@@ -1,18 +1,31 @@
 # Capitolo 7: Il Calendario 📅
 
-La pagina **Calendario** ti offre una vista calendario tradizionale di tutti i tuoi task ed eventi. È il modo migliore per vedere cosa succede in un determinato giorno, settimana o mese.
+La pagina **Calendario** ti offre una vista calendario tradizionale dei task del **progetto corrente**. È il modo migliore per vedere cosa succede in un determinato giorno, settimana o mese.
+
+> **💡 Nota:** Il Calendario non ha un selettore di progetto proprio: mostra il progetto corrente. Per cambiarlo usa il selettore in Planner, Kanban o Gantt, oppure apri un progetto dalla pagina Progetti. Se nessun progetto è selezionato vedrai *"Seleziona o crea un progetto per visualizzare il calendario."*
+
+---
+
+## 🗓️ Cosa appare sul Calendario
+
+Il Calendario non ha eventi separati: ogni elemento è un **task** del progetto (i task archiviati sono esclusi).
+*   Se il task ha **Inizio Pianificato** e **Fine Pianificata**, appare come una barra che copre tutti i giorni dall'inizio alla fine.
+*   Se ha solo una **Scadenza**, appare come un elemento di un solo giorno in quella data.
+*   I task senza date pianificate né scadenza non compaiono.
+
+Quando in un giorno ci sono troppi elementi, compare un link "+ N altro": cliccalo per vederli tutti.
 
 ---
 
 ## 🗓️ Viste del Calendario
 
 Il Calendario supporta quattro diverse viste:
-*   **Month (Mese)**: Vedi l'intero mese a colpo d'occhio. I task appaiono come blocchi colorati nelle date di scadenza.
-*   **Week (Settimana)**: Concentrati sulla settimana corrente con più dettaglio per giorno.
-*   **Day (Giorno)**: Approfondisci un singolo giorno per vedere tutti i task ed eventi.
-*   **Agenda**: Una semplice lista di eventi imminenti, ordinata cronologicamente.
+*   **Mese**: Vedi l'intero mese a colpo d'occhio.
+*   **Settimana**: Concentrati su una settimana con più dettaglio per giorno.
+*   **Giorno**: Approfondisci un singolo giorno.
+*   **Agenda**: Una semplice lista degli elementi, ordinata cronologicamente.
 
-Passa tra le viste usando i pulsanti nella barra strumenti del calendario.
+Passa tra le viste usando i pulsanti nella barra strumenti del calendario. Nella stessa barra trovi **Indietro**, **Oggi** e **Successivo** per scorrere il periodo visualizzato.
 
 ---
 
@@ -20,56 +33,51 @@ Passa tra le viste usando i pulsanti nella barra strumenti del calendario.
 
 L'intestazione in alto ti dà un controllo preciso sulla navigazione:
 
-*   **Selettore Mese**: Un dropdown che elenca tutti i mesi (nella tua lingua). Scegli qualsiasi mese per raggiungerlo direttamente.
-*   **Selettore Anno**: Un dropdown con gli anni (anno corrente ± 10). Passa tra gli anni istantaneamente.
+*   **Selettore Mese**: Un menu a tendina che elenca tutti i mesi (nella tua lingua). Scegli qualsiasi mese per raggiungerlo direttamente.
+*   **Selettore Anno**: Un menu a tendina con gli anni (anno corrente ± 10). Passa tra gli anni istantaneamente.
 *   **Pulsante Oggi** (📅): Clicca per tornare alla data odierna immediatamente.
-*   **Pulsante Aggiorna** (🔄): Ricarica tutti i dati del calendario dal server.
+*   **Pulsante Aggiorna** (🔄): Ricarica i task dal server.
 
 ---
 
 ## 🎨 Codifica Colori
 
-I task sul calendario sono codificati per colore in base al loro stato:
-*   🔴 **Rosso**: Task scaduti — la scadenza è passata e non sono completati.
-*   🟢 **Verde**: Task completati — lavoro finito.
-*   🔵 **Blu**: Task in corso — attualmente in lavorazione.
-*   ⬜ **Grigio**: Predefinito — task in qualsiasi altro stato (Da fare, In revisione, ecc.).
+*   🔴 **Rosso**: Task con la scadenza già passata e non ancora chiusi (i task **Fatto** o **Cancellato** non sono mai in ritardo).
+*   🟢 **Verde**: Task **Fatto**.
+*   🔵 **Blu**: Task **In Corso**.
+*   ⬜ **Grigio**: Tutti gli altri task (Da Fare, Revisione, Bloccato, Cancellato).
+
+Cliccando un task nel calendario, il riquadro laterale ne mostra **stato** e **priorità** con etichette colorate; le statistiche **In Ritardo** contano solo i task ancora aperti.
 
 ---
 
-## ➕ Creare Eventi nel Calendario
+## ➕ Creare un Task dal Calendario
 
-Clicca su qualsiasi giorno vuoto nel calendario per creare un nuovo evento:
+Clicca su un giorno (o seleziona un intervallo) nel calendario per creare un nuovo task:
 
-1. Appare un dialogo **"Nuovo Evento"** che mostra la data selezionata.
-2. Inserisci un **Titolo** per l'evento.
-3. Scegli il **Tipo** dal dropdown:
-    *   **TASK_BLOCK**: Un blocco di tempo dedicato al lavoro (predefinito).
-    *   **MEETING**: Una riunione con altri.
-    *   **CALL**: Una telefonata o videochiamata.
-    *   **APPOINTMENT**: Un appuntamento programmato.
-4. Clicca **"Crea"**.
+1. Si apre l'**Editor Task** ("Nuovo Task", vedi Capitolo 3) con le date già compilate: **Inizio Pianificato** sul giorno cliccato, **Fine Pianificata** e **Scadenza** sul giorno successivo.
+2. Inserisci almeno il **Titolo**. Se vuoi, nel campo **Tipo** scegli ad esempio **Riunione**, **Chiamata**, **Appuntamento** o **Blocco Task**.
+3. Clicca **"Crea Task"**.
 
-L'evento apparirà immediatamente sul calendario.
+Il task apparirà sul calendario (e anche in Planner, Kanban e Gantt).
 
 ---
 
-## 📋 Visualizzare i Dettagli dell'Evento
+## 📋 Visualizzare i Dettagli
 
-Clicca su qualsiasi evento nel calendario per vederne i dettagli nel **pannello destro**:
-*   **Titolo**: Il nome dell'evento o del task.
-*   **Data**: La data programmata (formato localizzato).
-*   **Badge Stato**: Stato corrente con codifica colore.
-*   **Badge Priorità**: Livello di priorità con codifica colore.
+Clicca su un elemento del calendario per vederne il **titolo** e la **data** nel **pannello destro**.
+
+Per modificare il task aprilo dal Planner o dalla Kanban.
 
 ---
 
 ## 📊 Statistiche del Calendario
 
-Il pannello destro mostra anche statistiche utili:
+Il pannello destro (**Calendario Task**) mostra anche un riquadro **Statistiche**:
+*   **Events on calendar**: Quanti task del progetto compaiono sul calendario.
 *   **Task con scadenza**: Numero totale di task che hanno una scadenza impostata.
-*   **Questo mese**: Quante scadenze cadono nel mese corrente.
-*   **Scaduti**: Quanti task hanno superato la loro scadenza.
+*   **Questo mese**: Quanti task cadono nel mese visualizzato (in base all'inizio pianificato o, in mancanza, alla scadenza).
+*   **In Ritardo**: Quanti task hanno superato la loro scadenza.
 
 ---
 

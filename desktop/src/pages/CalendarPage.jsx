@@ -45,6 +45,19 @@ const localizer = dateFnsLocalizer({
 // CalendarPage Component
 // ========================================
 
+// Tasks expose their workflow state as statusName/priorityName (TaskResponse).
+const STATUS_LABELS = {
+    TODO: "To Do", IN_PROGRESS: "In Progress", REVIEW: "Review",
+    BLOCKED: "Blocked", DONE: "Done", CANCELLED: "Cancelled",
+};
+const STATUS_BADGES = {
+    IN_PROGRESS: "bg-primary", REVIEW: "bg-info text-dark", BLOCKED: "bg-danger",
+    DONE: "bg-success", CANCELLED: "bg-secondary",
+};
+const PRIORITY_LABELS = { LOW: "Low", MEDIUM: "Medium", HIGH: "High", CRITICAL: "Critical" };
+const PRIORITY_BADGES = { MEDIUM: "bg-warning text-dark", HIGH: "bg-danger", CRITICAL: "bg-danger" };
+const isClosed = (task) => task.statusName === "DONE" || task.statusName === "CANCELLED";
+
 export default function CalendarPage({ shell }) {
     const { t, i18n } = useTranslation();
     const [tasks, setTasks] = useState([]);
@@ -178,17 +191,11 @@ export default function CalendarPage({ shell }) {
                             {format(selectedEvent.start, "dd MMMM yyyy", { locale: locales[i18n.language] || locales.en })}
                         </div>
                         <div className="d-flex gap-2">
-                            <span className={`badge ${
-                                selectedEvent.resource?.status === 'DONE' ? 'bg-success' :
-                                    selectedEvent.resource?.status === 'DOING' ? 'bg-primary' : 'bg-secondary'
-                            }`}>
-                                {selectedEvent.resource?.status || 'TODO'}
+                            <span className={`badge ${STATUS_BADGES[selectedEvent.resource?.statusName] || 'bg-secondary'}`}>
+                                {t(STATUS_LABELS[selectedEvent.resource?.statusName] || 'To Do')}
                             </span>
-                            <span className={`badge ${
-                                selectedEvent.resource?.priority === 'HIGH' ? 'bg-danger' :
-                                    selectedEvent.resource?.priority === 'MED' ? 'bg-warning text-dark' : 'bg-secondary'
-                            }`}>
-                                {selectedEvent.resource?.priority || 'MED'}
+                            <span className={`badge ${PRIORITY_BADGES[selectedEvent.resource?.priorityName] || 'bg-secondary'}`}>
+                                {t(PRIORITY_LABELS[selectedEvent.resource?.priorityName] || 'Medium')}
                             </span>
                         </div>
                     </div>
@@ -207,7 +214,7 @@ export default function CalendarPage({ shell }) {
                                 d.getFullYear() === currentDate.getFullYear();
                         }).length}</div>
                         <div>{t("Overdue")}: {tasks.filter(t => {
-                            if (!t.deadline || t.status === 'DONE') return false;
+                            if (!t.deadline || isClosed(t)) return false;
                             return new Date(t.deadline) < new Date();
                         }).length}</div>
                     </div>
@@ -251,7 +258,7 @@ export default function CalendarPage({ shell }) {
             const hasPlannedDates = task.plannedStart && task.plannedFinish;
             const hasDeadline = !!task.deadline;
             const deadline = hasDeadline ? new Date(task.deadline) : null;
-            const isOverdue = deadline && deadline < now && task.status !== 'DONE';
+            const isOverdue = deadline && deadline < now && !isClosed(task);
 
             if (hasPlannedDates) {
                 const start = new Date(task.plannedStart);
@@ -289,9 +296,9 @@ export default function CalendarPage({ shell }) {
 
         if (event.isOverdue) {
             backgroundColor = "#dc3545"; // Red for overdue
-        } else if (event.resource?.status === "DONE") {
+        } else if (event.resource?.statusName === "DONE") {
             backgroundColor = "#198754"; // Green for done
-        } else if (event.resource?.status === "DOING") {
+        } else if (event.resource?.statusName === "IN_PROGRESS") {
             backgroundColor = "#0d6efd"; // Blue for in progress
         }
 

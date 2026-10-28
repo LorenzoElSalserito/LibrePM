@@ -28,6 +28,9 @@ const GuidesPage = ({ shell }) => {
         { id: '16-controllo-modifiche', label: t('16. Change Control & Branches') },
         { id: '17-portfolio', label: t('17. Portfolio Management') },
         { id: '18-conformita', label: t('18. Privacy & Compliance') },
+        { id: '19-messaggi', label: t('19. Project Messages') },
+        { id: '20-tempo', label: t('20. Time Tracking') },
+        { id: '21-collaborazione', label: t('21. Shared Database & Sync') },
     ];
 
     useEffect(() => {
@@ -72,6 +75,9 @@ const GuidesPage = ({ shell }) => {
                             case '16-controllo-modifiche': content = (await import('../docs/it/16-controllo-modifiche.md?raw')).default; break;
                             case '17-portfolio': content = (await import('../docs/it/17-portfolio.md?raw')).default; break;
                             case '18-conformita': content = (await import('../docs/it/18-conformita.md?raw')).default; break;
+                            case '19-messaggi': content = (await import('../docs/it/19-messaggi.md?raw')).default; break;
+                            case '20-tempo': content = (await import('../docs/it/20-tempo.md?raw')).default; break;
+                            case '21-collaborazione': content = (await import('../docs/it/21-collaborazione.md?raw')).default; break;
                             default: content = (await import('../docs/it/01-intro.md?raw')).default;
                         }
                     } else {
@@ -95,6 +101,9 @@ const GuidesPage = ({ shell }) => {
                             case '16-controllo-modifiche': content = (await import('../docs/en/16-change-control.md?raw')).default; break;
                             case '17-portfolio': content = (await import('../docs/en/17-portfolio.md?raw')).default; break;
                             case '18-conformita': content = (await import('../docs/en/18-compliance.md?raw')).default; break;
+                            case '19-messaggi': content = (await import('../docs/en/19-messages.md?raw')).default; break;
+                            case '20-tempo': content = (await import('../docs/en/20-time-tracking.md?raw')).default; break;
+                            case '21-collaborazione': content = (await import('../docs/en/21-collaboration.md?raw')).default; break;
                             default: content = (await import('../docs/en/01-intro.md?raw')).default;
                         }
                     }

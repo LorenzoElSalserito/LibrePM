@@ -1,27 +1,45 @@
-# Privacy & Compliance
+# Chapter 18: Privacy & Compliance 🛡️
 
-LibrePM includes privacy and compliance features to help you manage data responsibly.
+LibrePM keeps your data on your computer (or on the shared database configured by your administrator) and offers a few tools to handle requests about personal data.
 
-## Data Categories
+---
 
-Five data categories are predefined:
-- **Personal Data** (Sensitive, 3-year retention)
-- **Financial Data** (Restricted, 10-year retention)
-- **Project Data** (Normal, no automatic expiry)
-- **Evidence** (Sensitive, 10-year retention)
-- **Audit Logs** (Normal, 2-year retention)
+## 🔐 Your Data (Settings)
 
-## Your Data
+Go to **Settings** and scroll to the **"Your Data"** card at the bottom of the page. You'll find two buttons:
 
-In Settings, you can:
-- **Export My Data** — Request a full export of your personal data
-- **Request Data Deletion** — Submit a deletion request (requires confirmation)
+*   **"Export My Data"**: records a request to export your personal data. You'll see the message *"Data export requested"*.
+*   **"Request Data Deletion"**: after a confirmation (*"Are you sure you want to request data deletion? This action cannot be undone."*) records a deletion request. You'll see the message *"Deletion request submitted"*.
 
-## Accessibility
+> **📌 Important:** These buttons **record a request** (in "pending" state) that must then be handled by whoever administers the installation: they do not produce a file and do not delete anything immediately. To get a copy of your data right away, use the database export described in chapters 5, 12 and 13 instead.
 
-LibrePM is designed with accessibility in mind:
-- **Skip to main content** link for keyboard navigation
-- **Reduced motion** support via `prefers-reduced-motion` media query
-- Semantic HTML structure
-- Form labels and ARIA attributes
-- High contrast support
+---
+
+## 🗃️ Data Categories & Retention
+
+LibrePM's database already contains five predefined data categories, each with a sensitivity level and a suggested retention period:
+
+| Category | Sensitivity | Suggested retention |
+|----------|-------------|---------------------|
+| Personal Data | Sensitive | 3 years |
+| Financial Data | Restricted | 10 years |
+| Project Data | Normal | no expiry |
+| Evidence | Sensitive | 10 years |
+| Audit Logs | Normal | 2 years |
+
+> **📌 Note:** Categories and retention policies are backend configuration: they are currently neither visible nor editable in the interface, and LibrePM does not automatically delete data when these periods expire.
+
+---
+
+## ♿ Accessibility
+
+Some measures already present in the interface:
+*   **Reduced motion**: if you enabled reduced motion in your operating system (`prefers-reduced-motion`), LibrePM keeps animations and transitions to a minimum.
+*   **Accessible side navigation**: sidebar entries are labelled buttons reachable with the Tab key; the active page is also announced to screen readers. When the sidebar is collapsed, the page name appears as a tooltip on hover.
+*   **Keyboard shortcuts**: the Command Palette (**Ctrl+K**) and the other shortcuts described in Chapter 1 let you move around without a mouse.
+*   **Light and dark theme**: pick the one that reads best for you in **Settings** (Chapter 13).
+
+---
+
+### 👉 Next Step
+You've seen every governance module, from finance to compliance. What's left are the tools for working together: next chapter, **Project Messages**.

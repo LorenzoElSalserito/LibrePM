@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import librepm from '@api/librepm.js';
 import MDEditor from "@uiw/react-md-editor";
-import { toast } from 'react-toastify';
 
 /**
  * Charter Section Component (Markdown editor)
@@ -54,7 +52,7 @@ const CharterSection = ({ title, content, onSave }) => {
 /**
  * Widget for displaying and editing Project Charter details.
  */
-const ProjectCharterWidget = ({ projectId, charter, onUpdate }) => {
+const ProjectCharterWidget = ({ charter, onUpdate }) => {
     const handleSaveSection = (field, value) => {
         onUpdate({ [field]: value });
     };

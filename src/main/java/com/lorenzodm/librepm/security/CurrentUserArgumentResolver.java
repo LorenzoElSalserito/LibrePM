@@ -12,8 +12,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
  * Argument Resolver per @CurrentUser annotation
  *
  * Risolve l'ID utente corrente in ordine di priorità:
- * 1. Header HTTP "X-User-Id" (per client desktop/mobile)
- * 2. OAuth2 Principal (per autenticazione web)
+ * 1. OAuth2 Principal (per autenticazione web)
+ * 2. Header HTTP "X-User-Id" (fallback desktop locale)
  *
  * Questo permette ai client Electron/React di passare l'utente
  * senza richiedere una sessione OAuth2 completa.
@@ -42,7 +42,11 @@ public class CurrentUserArgumentResolver implements HandlerMethodArgumentResolve
             @NonNull NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory
     ) {
-        // 1. Prima prova a leggere l'header X-User-Id (per client desktop/mobile)
+        // Authenticated sessions always take precedence over client-supplied identity.
+        var authenticated = CurrentUserUtils.getUserIdOrNull();
+        if (authenticated.isPresent()) return authenticated.get();
+
+        // Local desktop fallback: read l'header X-User-Id (per client desktop/mobile)
         String headerUserId = webRequest.getHeader(USER_ID_HEADER);
         if (headerUserId != null && !headerUserId.isBlank()) {
             return headerUserId.trim();

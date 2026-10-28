@@ -23,7 +23,11 @@ public class AssetMapper {
                 a.getLastSyncedAt(),
                 a.getSyncStatus() != null ? a.getSyncStatus().name() : null,
                 a.getCloudUrl(),
-                a.getOwner() != null ? a.getOwner().getId() : null
+                a.getOwner() != null ? a.getOwner().getId() : null,
+                a.getOwner() != null ? a.getOwner().getDisplayName() : null,
+                a.getProjectId() != null ? a.getProjectId()
+                        : a.getTask() != null && a.getTask().getProject() != null ? a.getTask().getProject().getId() : null,
+                a.getTask() != null ? a.getTask().getId() : null
         );
     }
 }

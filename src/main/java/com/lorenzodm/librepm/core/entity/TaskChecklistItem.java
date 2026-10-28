@@ -3,8 +3,6 @@ package com.lorenzodm.librepm.core.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -38,11 +36,9 @@ public class TaskChecklistItem {
     @Column(nullable = false)
     private int sortOrder = 0;
 
-    @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @UpdateTimestamp
     @Column(nullable = false)
     private Instant updatedAt;
 
@@ -123,5 +119,19 @@ public class TaskChecklistItem {
     @Override
     public int hashCode() {
         return Objects.hash(id);
+    }
+
+    // Hibernate's @CreationTimestamp/@UpdateTimestamp truncate to whole seconds on
+    // converter-mapped columns: same-second notes and messages lost their order.
+    @PrePersist
+    protected void initAuditTimestamps() {
+        Instant now = Instant.now();
+        createdAt = now;
+        updatedAt = now;
+    }
+
+    @PreUpdate
+    protected void refreshUpdatedAt() {
+        updatedAt = Instant.now();
     }
 }

@@ -223,30 +223,6 @@ export default function FocusManager() {
       }, delay);
     };
 
-    /**
-     * Schedules focus for when the window becomes key-focused
-     */
-    const scheduleFocusWhenReady = (el) => {
-      pendingElRef.current = el;
-
-      const attempt = (tries = 0) => {
-        const target = pendingElRef.current;
-        if (!target || !target.isConnected) return;
-
-        if (document.hasFocus()) {
-          placeCaretAtEnd(target);
-          pendingElRef.current = null;
-          return;
-        }
-
-        if (tries < 12) {
-          requestAnimationFrame(() => attempt(tries + 1));
-        }
-      };
-
-      requestAnimationFrame(() => attempt(0));
-    };
-
     // ========================================
     // RULE 1: Intercept clicks on text-boxes
     // ========================================

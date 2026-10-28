@@ -11,7 +11,6 @@ export default function FinancePage({ shell }) {
     const { t } = useTranslation();
     const projectId = shell?.currentProject?.id;
     const [tab, setTab] = useState('budget');
-    const [loading, setLoading] = useState(false);
 
     // Budget state
     const [budgets, setBudgets] = useState([]);

@@ -42,6 +42,7 @@ public class Notification {
 
     public enum NotificationType {
         NEW_NOTE,
+        FILE_ADDED,
         TASK_ASSIGNED,
         TASK_STATUS_CHANGED,
         MENTION,

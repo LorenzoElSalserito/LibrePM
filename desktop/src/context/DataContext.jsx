@@ -22,7 +22,7 @@ export function DataProvider({ projectId, userId, children }) {
         try {
             const [t, n, d] = await Promise.all([
                 librepm.tasksList(userId, projectId).catch(() => []),
-                librepm.notesList(userId, projectId).catch(() => []),
+                librepm.notesListProject(projectId).catch(() => []),
                 librepm.deliverablesList(userId, projectId).catch(() => []),
             ]);
             if (currentProjectRef.current === projectId) {
@@ -46,7 +46,7 @@ export function DataProvider({ projectId, userId, children }) {
     const refreshNotes = useCallback(async () => {
         if (!projectId || !userId) return;
         try {
-            const n = await librepm.notesList(userId, projectId);
+            const n = await librepm.notesListProject(projectId);
             if (currentProjectRef.current === projectId) setNotes(n || []);
         } catch { /* ignore */ }
     }, [projectId, userId]);

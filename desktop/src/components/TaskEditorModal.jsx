@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { useWorkflow } from "../context/WorkflowContext.jsx";
 import { useModal } from "../hooks/useModal.js";
 import BacklinksPanel from "./BacklinksPanel.jsx";
+import AttachmentsPanel, { MAX_ATTACHMENT_BYTES } from "./AttachmentsPanel.jsx";
 
 /**
  * TaskEditorModal - Modale per creare/editare task
@@ -69,7 +70,6 @@ export default function TaskEditorModal({
 
     // Assets state
     const [uploadedFiles, setUploadedFiles] = useState([]);
-    const [existingAssets, setExistingAssets] = useState([]);
 
     // UI state
     const [showPreview, setShowPreview] = useState(false);
@@ -128,7 +128,6 @@ export default function TaskEditorModal({
 
         setChecklistItems([]);
         setUploadedFiles([]);
-        setExistingAssets([]);
         setErrors({});
         setActiveTab("details");
         setTaskNotes([]);
@@ -217,7 +216,6 @@ export default function TaskEditorModal({
             setActualEffortHours(task.actualEffortHours || "");
 
             setChecklistItems(task.checklistItems || []);
-            setExistingAssets(task.assets || []);
 
             // Load notes if tab is active or just pre-load
             loadTaskNotes(task.id);
@@ -288,7 +286,6 @@ export default function TaskEditorModal({
     // Auto-calculate effort from planned dates (business days × 480 min = 8h/day)
     const calcEffortFromDates = useCallback((start, finish) => {
         if (!start || !finish || finish <= start) return null;
-        const msPerDay = 86400000;
         let days = 0;
         const cur = new Date(start);
         cur.setHours(0, 0, 0, 0);
@@ -361,7 +358,7 @@ export default function TaskEditorModal({
             toast.success(`${acceptedFiles.length} ${t("files uploaded")}`);
         },
         multiple: true,
-        maxSize: 10485760, // 10MB
+        maxSize: MAX_ATTACHMENT_BYTES,
     });
 
     const addTag = () => {
@@ -481,14 +478,6 @@ export default function TaskEditorModal({
 
     const removeFile = (index) => {
         setUploadedFiles(uploadedFiles.filter((_, i) => i !== index));
-    };
-
-    const removeExistingAsset = (assetId) => {
-        setExistingAssets(existingAssets.filter((a) => a.id !== assetId));
-    };
-
-    const handleDownloadAsset = (assetId) => {
-        librepm.assetsDownload(assetId);
     };
 
     if (!show) return null;
@@ -990,90 +979,59 @@ export default function TaskEditorModal({
                                 </div>
                             </div>
 
-                            {/* Upload Assets */}
+                            {/* Attachments: shared with project members through the database */}
                             <div className="mb-3">
-                                <label className="form-label fw-bold">{t("Attachments")}</label>
-
-                                {/* Dropzone */}
-                                <div
-                                    {...getRootProps()}
-                                    className={`border rounded p-4 text-center ${
-                                        isDragActive ? "bg-light border-primary" : "bg-white border-secondary"
-                                    }`}
-                                    style={{ cursor: "pointer", borderStyle: "dashed" }}
-                                >
-                                    <input {...getInputProps()} />
-                                    <i className="bi bi-cloud-upload fs-2 mb-2 text-muted d-block"></i>
-                                    <p className="mb-0 text-muted">
-                                        {isDragActive
-                                            ? t("Drop files here...")
-                                            : t("Drag files here or click to select")}
-                                    </p>
-                                    <small className="text-muted">{t("Max 10MB per file")}</small>
-                                </div>
-
-                                {/* Lista file caricati */}
-                                {uploadedFiles.length > 0 && (
-                                    <div className="mt-3">
-                                        <h6>{t("Files to upload:")}</h6>
-                                        {uploadedFiles.map((file, idx) => (
-                                            <div
-                                                key={idx}
-                                                className="d-flex align-items-center justify-content-between p-2 bg-light border rounded mb-2"
-                                            >
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <i className="bi bi-file-earmark"></i>
-                                                    <span>{file.name}</span>
-                                                    <small className="text-muted">
-                                                        ({(file.size / 1024).toFixed(1)} KB)
-                                                    </small>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    className="btn btn-outline-danger btn-sm"
-                                                    onClick={() => removeFile(idx)}
-                                                >
-                                                    <i className="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        ))}
+                                {task?.id ? (
+                                    <AttachmentsPanel taskId={task.id} projectId={projectId} title={t("Attachments")} />
+                                ) : (
+                                    <>
+                                    <label className="form-label fw-bold">{t("Attachments")}</label>
+                                    {/* Dropzone */}
+                                    <div
+                                        {...getRootProps()}
+                                        className={`border rounded p-4 text-center ${
+                                            isDragActive ? "bg-light border-primary" : "bg-white border-secondary"
+                                        }`}
+                                        style={{ cursor: "pointer", borderStyle: "dashed" }}
+                                    >
+                                        <input {...getInputProps()} />
+                                        <i className="bi bi-cloud-upload fs-2 mb-2 text-muted d-block"></i>
+                                        <p className="mb-0 text-muted">
+                                            {isDragActive
+                                                ? t("Drop files here...")
+                                                : t("Drag files here or click to select")}
+                                        </p>
+                                        <small className="text-muted">{t("Max 50 MB per file")}</small>
                                     </div>
-                                )}
 
-                                {/* Asset esistenti (in edit mode) */}
-                                {existingAssets.length > 0 && (
-                                    <div className="mt-3">
-                                        <h6>{t("Existing assets:")}</h6>
-                                        {existingAssets.map((asset) => (
-                                            <div
-                                                key={asset.id}
-                                                className="d-flex align-items-center justify-content-between p-2 bg-light border border-success rounded mb-2"
-                                            >
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <i className="bi bi-file-earmark text-success"></i>
-                                                    <span>{asset.fileName}</span>
-                                                </div>
-                                                <div className="d-flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-outline-primary btn-sm"
-                                                        onClick={() => handleDownloadAsset(asset.id)}
-                                                        title={t("Download")}
-                                                    >
-                                                        <i className="bi bi-download"></i>
-                                                    </button>
+                                    {/* Lista file caricati */}
+                                    {uploadedFiles.length > 0 && (
+                                        <div className="mt-3">
+                                            <h6>{t("Files to upload:")}</h6>
+                                            {uploadedFiles.map((file, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="d-flex align-items-center justify-content-between p-2 bg-light border rounded mb-2"
+                                                >
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        <i className="bi bi-file-earmark"></i>
+                                                        <span>{file.name}</span>
+                                                        <small className="text-muted">
+                                                            ({(file.size / 1024).toFixed(1)} KB)
+                                                        </small>
+                                                    </div>
                                                     <button
                                                         type="button"
                                                         className="btn btn-outline-danger btn-sm"
-                                                        onClick={() => removeExistingAsset(asset.id)}
-                                                        title={t("Delete")}
+                                                        onClick={() => removeFile(idx)}
                                                     >
                                                         <i className="bi bi-trash"></i>
                                                     </button>
                                                 </div>
-                                            </div>
-                                        ))}
-                                    </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    </>
                                 )}
                             </div>
                         </form>
@@ -1089,9 +1047,7 @@ export default function TaskEditorModal({
                                         <BacklinksPanel
                                             entityType="TASK"
                                             entityId={task.id}
-                                            onNavigate={(noteId) => {
-                                                if (shell?.navigate) shell.navigate("notes", { noteId });
-                                            }}
+                                            onNavigate={(noteId) => handleEditNote({ id: noteId })}
                                         />
                                     </div>
                                 )}

@@ -1,42 +1,71 @@
 # Capitolo 11: Analytics 📈
 
-La pagina **Analytics** ti aiuta a comprendere i tuoi pattern di produttività e quanto sono accurate le tue stime temporali.
+La pagina **Analisi** (il suo titolo è **"Analytics Hub"**) ti aiuta a capire i tuoi ritmi di lavoro e quanto sono accurate le tue stime: "Analisi produttività e accuratezza stime".
 
 ---
 
 ## 🎛️ Selettore Progetto
 
-In cima alla pagina, un **selettore progetto** dropdown ti permette di scegliere:
-*   **Tutti i progetti**: Vedi analytics aggregati su tutto il tuo lavoro.
-*   **Progetto specifico**: Filtra per vedere gli analytics di un solo progetto.
+In alto a destra, un **selettore progetto** ti permette di scegliere:
+*   **Tutti i progetti**: analisi aggregate su tutto il tuo lavoro.
+*   **Un progetto specifico** (tra quelli non archiviati): analisi di un solo progetto. Alcuni riquadri compaiono **solo** in questa modalità.
+
+---
+
+## 🔢 Card Riassuntive (progetto specifico)
+
+Quando selezioni un progetto, in cima appaiono quattro card:
+*   **Task Totali**: quanti task ha il progetto.
+*   **Completati**: quanti sono conclusi.
+*   **In Corso**: quanti sono in lavorazione.
+*   **Ore Totali Registrate**: la somma delle registrazioni di tempo del progetto (vedi il Capitolo 20, **Time Tracking**).
 
 ---
 
 ## 🔥 Focus Heatmap
 
-Il widget **Focus Heatmap** mostra quando sei più produttivo. Visualizza le tue sessioni Focus Timer come una heatmap, rivelando pattern nelle tue abitudini di lavoro:
-*   In quali giorni della settimana lavori di più.
-*   A che ora del giorno sei più concentrato.
-*   Tendenze nel tempo.
+La **Focus Heatmap** mostra quanto ti sei concentrato giorno per giorno nell'**ultimo anno**, in stile calendario: ogni quadratino è un giorno, ogni colonna una settimana.
+*   Più il verde è intenso, più minuti di focus hai accumulato quel giorno (legenda **Meno** → **Più**).
+*   Passa il mouse su un quadratino per vedere data e minuti.
+*   Ti aiuta a riconoscere i giorni più produttivi e la costanza nel tempo.
 
-Questi dati vengono dal Focus Timer che usi sulle card Kanban (Capitolo 3).
-
----
-
-## 🎯 Accuratezza delle Stime
-
-Il widget **Accuratezza delle Stime** confronta le tue stime temporali con il tempo effettivamente speso:
-*   Vedi quanto bene hai previsto la durata dei task.
-*   Identifica pattern di sovrastima o sottostima.
-*   Migliora le tue capacità di pianificazione nel tempo.
+I dati vengono dalle sessioni del **Focus Timer** (il pulsante ▶ sulle card Kanban, Capitolo 3). Con un progetto selezionato vengono considerate solo le sessioni sui suoi task.
 
 ---
 
-## 💚 Salute del Progetto
+## 🎯 Accuratezza Stime
 
-Un widget **Salute del Progetto** è pianificato e mostra un segnaposto: *"Analisi della salute in arrivo..."*
+Il riquadro **Accuratezza Stime** confronta l'effort stimato dei task con quello effettivo:
+*   In alto, la **deviazione media globale** in percentuale: 🔴 rossa e positiva se in media ci hai messo **più** del previsto, 🟢 verde se ci hai messo meno.
+*   Con **Tutti i progetti**, il grafico mostra la deviazione media (%) per progetto (fino a 5 progetti).
+*   Con un **progetto specifico**, il grafico mostra i 5 task più sottostimati, con minuti stimati e reali a confronto.
 
-> **📌 Prossimamente:** Questo widget fornirà un'analisi completa della salute dei tuoi progetti, combinando metriche da tassi di completamento, task scaduti, rischi e carico di lavoro del team.
+Vengono considerati solo i task con un effort stimato, nei progetti di cui sei **proprietario**. Se non ci sono dati leggi "Nessun dato sulle stime disponibile."
+
+---
+
+## 📊 Varianza Effort (progetto specifico)
+
+Il riquadro **Varianza Effort** elenca, per ogni task stimato del progetto, le ore stimate ("stim") e quelle effettivamente registrate ("cons"), con due barre a confronto e un badge con lo scostamento percentuale:
+*   🔴 rosso: oltre +20%.
+*   🟡 giallo: da 0 a +20%.
+*   🟢 verde: almeno 10% sotto la stima.
+*   ⬜ grigio: in linea.
+
+Se il progetto non ha task stimati leggi "Nessun task stimato". Questo riquadro richiede un progetto selezionato.
+
+---
+
+## ⏱️ Distribuzione Tempo Recente (progetto specifico)
+
+Un grafico a barre con le ore registrate negli **ultimi 7 giorni in cui hai registrato tempo** sul progetto (dati del Time Tracking, Capitolo 20).
+
+---
+
+## 🧩 Task per Tipo e Tasso di Completamento (progetto specifico)
+
+*   **Task per Tipo**: quanti task ci sono per ogni tipo (Task, Milestone, Meeting...). Appare quando il progetto ha task di almeno due tipi diversi.
+*   **Tasso di Completamento**: un anello che mostra la percentuale di task completati.
 
 ---
 

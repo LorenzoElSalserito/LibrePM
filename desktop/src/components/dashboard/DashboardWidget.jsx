@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 /**
  * DashboardWidget - Reusable wrapper for executive dashboard widgets.
  * Provides header with title, collapse toggle, and loading/error states.
  */
 export default function DashboardWidget({ title, icon, children, loading, error, collapsible = true, className = '' }) {
-    const { t } = useTranslation();
     const [collapsed, setCollapsed] = useState(false);
 
     return (

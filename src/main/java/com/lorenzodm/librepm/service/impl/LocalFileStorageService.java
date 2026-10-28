@@ -4,6 +4,8 @@ import com.lorenzodm.librepm.api.exception.BadRequestException;
 import com.lorenzodm.librepm.api.exception.ResourceNotFoundException;
 import com.lorenzodm.librepm.service.FileStorageService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -37,7 +39,8 @@ public class LocalFileStorageService implements FileStorageService {
         }
 
         if (maxFileSize > 0 && file.getSize() > maxFileSize) {
-            throw new BadRequestException("File troppo grande: " + file.getSize() + " bytes");
+            throw new ResponseStatusException(HttpStatus.PAYLOAD_TOO_LARGE, String.format(Locale.ROOT,
+                    "File troppo grande: %.1f MB (massimo %.0f MB)", file.getSize() / 1048576.0, maxFileSize / 1048576.0));
         }
 
         String original = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload.bin";
@@ -82,6 +85,21 @@ public class LocalFileStorageService implements FileStorageService {
         } catch (Exception e) {
             throw new IllegalStateException("Errore salvataggio file su disco", e);
         }
+    }
+
+    @Override
+    public Path resolveLocal(String relativePath) {
+        Path root = Paths.get(storagePath).toAbsolutePath().normalize();
+        Path file = root.resolve(relativePath).normalize();
+        if (!file.startsWith(root)) {
+            throw new BadRequestException("Path non valido");
+        }
+        return file;
+    }
+
+    @Override
+    public long maxFileSize() {
+        return maxFileSize;
     }
 
     @Override

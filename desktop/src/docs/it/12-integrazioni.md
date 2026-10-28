@@ -1,63 +1,60 @@
 # Capitolo 12: Integrazioni e Interoperabilità 🔌
 
-La pagina **Integrazioni** è il tuo hub per connettere LibrePM con il mondo esterno — calendari esterni, import/export dati e backup.
+La pagina **Integrazioni** (titolo interno **"Integrazioni & Dati"**) è il tuo hub per collegare LibrePM con il mondo esterno: feed calendario, import/export dei dati e profili di mappatura.
+
+Il pulsante **Aggiorna** (🔄) nell'intestazione ricarica il token del feed calendario.
 
 ---
 
 ## 📅 Calendario Esterno (iCal)
 
-LibrePM genera un **URL feed iCal** che ti permette di vedere le scadenze dei tuoi task in qualsiasi app calendario che supporta lo standard iCal/ICS.
+LibrePM può generare un **feed iCal** (standard ICS) per vedere i tuoi task in un'app calendario come Microsoft Outlook, Apple Calendar o qualsiasi app che supporti l'iscrizione a un calendario tramite URL.
 
-### App Calendario Supportate
-*   Google Calendar
-*   Microsoft Outlook
-*   Apple Calendar
-*   Qualsiasi app che supporta feed iCal
+Nella card **"Calendario Esterno (iCal)"** di questa pagina trovi:
+*   Un campo di sola lettura con l'URL del feed e il pulsante **Copia** (icona appunti).
+*   Il pulsante **"Rigenera Token"**: crea un nuovo token (con conferma). Il vecchio link smette di funzionare e va aggiornato in tutti i calendari dove l'hai aggiunto.
 
-### Come Configurarlo
-1. Vai nella pagina **Integrazioni**.
-2. Nella card **"Calendario Esterno (iCal)"**, vedrai un campo URL di sola lettura con il tuo link feed personale.
-3. Clicca il pulsante **Copia** (icona appunti) per copiare l'URL.
-4. Apri la tua app calendario e aggiungilo come "Iscriviti a Calendario" o "Aggiungi calendario tramite URL".
-5. Le scadenze dei tuoi task appariranno nel tuo calendario esterno!
-
-### Rigenerare il Token
-Se hai bisogno di un nuovo URL (es. per motivi di sicurezza):
-1. Clicca il pulsante **"Rigenera Token"** in fondo alla card.
-2. Un nuovo URL viene generato. Il vecchio URL smette di funzionare immediatamente.
-3. **Importante**: Dovrai aggiornare il link in tutti i calendari esterni dove l'hai aggiunto.
+> **⚠️ Stato attuale:** il link mostrato in questa pagina punta a un indirizzo che il backend non espone, quindi le app calendario non riescono a leggerlo. Usa invece il link della card **"Calendario Esterno (iCal)"** nelle **Impostazioni** (Capitolo 13), che funziona dopo aver cliccato **"Rigenera Token"**.
 
 ---
 
 ## 📤 Esportare i Dati
 
-### Esporta JSON
-Clicca il pulsante **"Esporta JSON"** (blu, con icona download) per esportare tutti i tuoi dati in formato JSON:
-*   Nell'app desktop Electron: Si apre un dialogo di salvataggio per scegliere dove salvare.
-*   Nella versione web: Il file si scarica direttamente.
-*   Il file JSON contiene tutti i progetti, task, note e impostazioni.
+Nella card **"Importa / Esporta Dati"** trovi due gruppi di pulsanti. Nell'app desktop ogni pulsante apre la finestra di sistema per scegliere il file; durante l'operazione compare un indicatore di avanzamento e al termine un messaggio con l'esito e il percorso del file.
 
-### Esporta CSV (Per Progetto)
-Clicca il pulsante **"Esporta CSV (Progetto)"** (grigio, con icona foglio di calcolo) per esportare i task del progetto corrente come foglio CSV:
-*   Questo pulsante è **disabilitato** se nessun progetto è selezionato.
-*   Il file CSV può essere aperto in Excel, Google Sheets o qualsiasi applicazione foglio di calcolo.
+### Workspace (JSON) → Esporta JSON
+Il pulsante **"Esporta JSON"** (blu) salva in un file `LibrePM-export-….json` **tutti i progetti del profilo corrente** con task, sotto-task, stato, priorità, date, tag e checklist. Funziona sia con il database locale sia con un **database condiviso** (MariaDB). Lo stesso export è disponibile dal menu del profilo, voce **"Esporta dati (JSON)"**.
+
+### Task del progetto (CSV) → Esporta CSV (Progetto)
+Il pulsante **"Esporta CSV (Progetto)"** (grigio, icona foglio di calcolo) esporta i task del **progetto corrente** in un file CSV, apribile con Excel, LibreOffice o Google Sheets.
+*   Il pulsante è **disabilitato** se nessun progetto è selezionato.
+*   Le descrizioni su più righe vengono racchiuse tra virgolette, così il file si può reimportare senza perdite.
 
 ---
 
 ## 📥 Importare i Dati
 
 ### Importa JSON
-Clicca il pulsante **"Importa JSON"** (rosso, con icona upload) per importare dati da un backup JSON precedente:
-*   Nell'app desktop Electron: Si apre un selettore file per scegliere il file JSON.
-*   Nella versione web: Si apre un browser file.
+Il pulsante **"Importa JSON"** apre un file creato con **"Esporta JSON"** e **aggiunge** i progetti che contiene come **nuovi progetti** del profilo corrente (con i loro task, sotto-task, tag e checklist). I dati già presenti **non vengono modificati né cancellati**: importare due volte lo stesso file crea due copie. Se il file non è valido non viene importato nulla. Al termine la pagina si ricarica per mostrare i nuovi progetti.
+*   I tag vengono riutilizzati se ne hai già uno con lo stesso nome. Se il nome è già usato da **un altro profilo** il tag non viene applicato e un avviso te lo segnala.
+*   Un file di **backup cifrato** (`.enc.json`) non si importa da qui: usa **"Importa backup cifrato"** nelle Impostazioni (Capitolo 13).
 
-> **⚠️ Attenzione**: L'importazione JSON **sovrascriverà** i tuoi dati correnti. Assicurati di avere un backup prima di importare!
+### Importa CSV (Progetto)
+Il pulsante **"Importa CSV (Progetto)"** aggiunge al **progetto corrente** i task di un file CSV, per esempio uno creato con **"Esporta CSV (Progetto)"**. Colonne riconosciute: `title` (obbligatoria), `description`, `status`, `priority`, `deadline` (AAAA-MM-GG), `estimatedEffort`. Le righe senza titolo vengono saltate e segnalate.
+
+---
+
+## 🗂️ Profili di Mappatura Import
+
+L'ultima card, **"Profili di Mappatura Import"**, elenca i profili di mappatura colonne salvati per gli import CSV, con **Nome**, **Tipo Entità** e data di creazione (**Creato**). Puoi eliminare un profilo con l'icona cestino (con conferma).
+
+Se non ci sono profili vedrai *"Nessun profilo di mappatura salvato."* L'app al momento non offre una procedura per crearne di nuovi da questa pagina.
 
 ---
 
 ## 🔄 Disponibile anche nelle Impostazioni
 
-L'URL del feed calendario e la rigenerazione del token sono disponibili anche nella pagina **Impostazioni** sotto "Calendario Esterno (iCal)". L'esportazione e importazione del database (formato .db) sono disponibili sotto "Backup e Sincronizzazione" nelle Impostazioni.
+Il feed calendario, l'export/import del file di database (.db) e il **backup cifrato** (export e import) si trovano in **Impostazioni → Backup e Sincronizzazione** (Capitolo 13). Se usi un **database condiviso** (MariaDB), vedi il Capitolo 21.
 
 ---
 

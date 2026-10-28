@@ -213,33 +213,20 @@ contextBridge.exposeInMainWorld("librepm", {
     focusHistoryAll: () => ipcRenderer.invoke("focus:historyAll"),
 
     // ========================================
-    // Export/Import with Native Dialogs
+    // Export/Import (native dialogs, handled in main: electron/data-transfer.cjs)
+    // Each call opens its own file dialog; results are { ok, canceled?, filePath?, summary?, code?, error? }.
     // ========================================
-
-    /**
-     * Export JSON with native dialog to choose destination
-     */
-    exportJsonDialog: () => ipcRenderer.invoke("data:exportJsonDialog"),
-
-    /**
-     * Export CSV with native dialog
-     */
-    exportCsvDialog: (projectId) => ipcRenderer.invoke("data:exportCsvDialog", projectId),
-
-    /**
-     * Import JSON with native dialog to choose file
-     */
-    importJsonDialog: () => ipcRenderer.invoke("data:importJsonDialog"),
-
-    /**
-     * Import database (.db) from the Java backend
-     */
-    importDbDialog: () => ipcRenderer.invoke("data:importDbDialog"),
-
-    /**
-     * Export database (.db) from the Java backend
-     */
-    exportDbDialog: () => ipcRenderer.invoke("data:exportDbDialog"),
+    dataTransfer: {
+        capabilities: () => ipcRenderer.invoke("transfer:capabilities"),
+        exportJson: (userId) => ipcRenderer.invoke("transfer:exportJson", userId),
+        importJson: (userId) => ipcRenderer.invoke("transfer:importJson", userId),
+        exportCsv: (userId, projectId) => ipcRenderer.invoke("transfer:exportCsv", userId, projectId),
+        importCsv: (userId, projectId) => ipcRenderer.invoke("transfer:importCsv", userId, projectId),
+        exportDb: () => ipcRenderer.invoke("transfer:exportDb"),
+        importDb: () => ipcRenderer.invoke("transfer:importDb"),
+        exportEncrypted: (passphrase) => ipcRenderer.invoke("transfer:exportEncrypted", passphrase),
+        importEncrypted: (passphrase) => ipcRenderer.invoke("transfer:importEncrypted", passphrase),
+    },
 
     // ========================================
     // App Paths

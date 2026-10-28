@@ -1,65 +1,62 @@
-# Chapter 12: Integrations & Interoperability 🔌
+# Chapter 12: Integrations and Interoperability 🔌
 
-The **Integrations** page is your hub for connecting LibrePM with the outside world — external calendars, data import/export, and backup.
+The **Integrations** page (inner title **"Integrations & Data"**) is your hub for connecting LibrePM with the outside world: calendar feed, data import/export and mapping profiles.
+
+The **Refresh** button (🔄) in the header reloads the calendar feed token.
 
 ---
 
 ## 📅 External Calendar (iCal)
 
-LibrePM generates an **iCal feed URL** that lets you see your task deadlines in any calendar app that supports the iCal/ICS standard.
+LibrePM can generate an **iCal feed** (ICS standard) so you can see your tasks in a calendar app such as Microsoft Outlook, Apple Calendar or any app that can subscribe to a calendar by URL.
 
-### Supported Calendar Apps
-*   Google Calendar
-*   Microsoft Outlook
-*   Apple Calendar
-*   Any app supporting iCal feeds
+In the **"External Calendar (iCal)"** card on this page you'll find:
+*   A read-only field with the feed URL and a **Copy** button (clipboard icon).
+*   The **"Regenerate Token"** button: creates a new token (after confirmation). The old link stops working and must be updated in every calendar where you added it.
 
-### How to Set Up
-1. Go to the **Integrations** page.
-2. In the **"External Calendar (iCal)"** card, you'll see a read-only URL field with your personal feed link.
-3. Click the **Copy** button (clipboard icon) to copy the URL.
-4. Open your calendar app and add it as a "Subscribe to Calendar" or "Add calendar by URL".
-5. Your task deadlines will appear in your external calendar!
-
-### Regenerating the Token
-If you need a new URL (e.g., for security reasons):
-1. Click the **"Regenerate Token"** button at the bottom of the card.
-2. A new URL is generated. The old URL stops working immediately.
-3. **Important**: You'll need to update the link in any external calendars where you added it.
+> **⚠️ Current status:** the link shown on this page points to an address the backend does not serve, so calendar apps cannot read it. Use the link in the **"External Calendar (iCal)"** card in **Settings** instead (Chapter 13), which works after you click **"Regenerate Token"**.
 
 ---
 
 ## 📤 Exporting Data
 
-### Export JSON
-Click the **"Export JSON"** button (blue, with download icon) to export all your data in JSON format:
-*   In the Electron desktop app: A save dialog opens to choose where to save.
-*   In the web version: The file downloads directly.
-*   The JSON file contains all projects, tasks, notes, and settings.
+The **"Import / Export Data"** card has two groups of buttons. In the desktop app each button opens the system dialog to choose the file; a progress indicator is shown while it runs, followed by a message with the result and the file path.
 
-### Export CSV (Per Project)
-Click the **"Export CSV (Project)"** button (gray, with spreadsheet icon) to export the current project's tasks as a CSV spreadsheet:
-*   This button is **disabled** if no project is currently selected.
-*   The CSV file can be opened in Excel, Google Sheets, or any spreadsheet application.
+### Workspace (JSON) → Export JSON
+The **"Export JSON"** button (blue) saves a `LibrePM-export-….json` file with **all projects of the current profile**, including tasks, sub-tasks, status, priority, dates, tags and checklists. It works with both the local database and a **shared database** (MariaDB). The same export is available from the profile menu, **"Export data (JSON)"**.
+
+### Project tasks (CSV) → Export CSV (Project)
+The **"Export CSV (Project)"** button (grey, spreadsheet icon) exports the tasks of the **current project** to a CSV file you can open in Excel, LibreOffice or Google Sheets.
+*   The button is **disabled** when no project is selected.
+*   Multi-line descriptions are quoted, so the file can be imported back without losses.
 
 ---
 
 ## 📥 Importing Data
 
 ### Import JSON
-Click the **"Import JSON"** button (red, with upload icon) to import data from a previous JSON backup:
-*   In the Electron desktop app: A file picker opens to select the JSON file.
-*   In the web version: A file browser opens.
+The **"Import JSON"** button opens a file created with **"Export JSON"** and **adds** the projects it contains as **new projects** of the current profile (with their tasks, sub-tasks, tags and checklists). Existing data is **not changed or deleted**: importing the same file twice creates two copies. If the file is invalid nothing is imported. When it finishes the page reloads to show the new projects.
+*   Tags are reused when you already have one with the same name. If the name is already used by **another profile** the tag is not applied and a warning tells you.
+*   An **encrypted backup** (`.enc.json`) cannot be imported here: use **"Import encrypted backup"** in Settings (Chapter 13).
 
-> **⚠️ Warning**: Importing JSON will **overwrite** your current data. Make sure you have a backup before importing!
+### Import CSV (Project)
+The **"Import CSV (Project)"** button adds the tasks of a CSV file, for example one created with **"Export CSV (Project)"**, to the **current project**. Recognised columns: `title` (required), `description`, `status`, `priority`, `deadline` (YYYY-MM-DD), `estimatedEffort`. Rows without a title are skipped and reported.
+
+---
+
+## 🗂️ Import Mapping Profiles
+
+The last card, **"Import Mapping Profiles"**, lists the saved column mapping profiles for CSV imports, with **Name**, **Entity Type** and creation date (**Created**). You can delete a profile with the trash icon (after confirmation).
+
+If there are no profiles you'll see *"No mapping profiles saved yet."* The app currently offers no way to create new profiles from this page.
 
 ---
 
 ## 🔄 Also Available in Settings
 
-The calendar feed URL and token regeneration are also available in the **Settings** page under "External Calendar (iCal)". Export and import of the database (.db format) are available under "Backup and Synchronization" in Settings.
+The calendar feed, database file (.db) export/import and the **encrypted backup** (export and import) are in **Settings → Backup and Synchronization** (Chapter 13). If you use a **shared database** (MariaDB), see Chapter 21.
 
 ---
 
 ### 👉 Next Step
-Finally, let's configure LibrePM to work exactly how you want. Next chapter: **Settings & Personalization**.
+Finally, let's configure LibrePM to work exactly the way you want. Next chapter: **Settings and Personalization**.

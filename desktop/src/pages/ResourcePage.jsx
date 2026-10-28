@@ -121,7 +121,6 @@ const ResourcePage = ({ shell }) => {
             date.setHours(0,0,0,0);
 
             const filtered = tasks.filter(t => {
-                const assigneeId = t.assignedTo ? t.assignedTo.id : (t.owner || "unassigned"); // Fallback if assignedTo object missing
                 // Check assignee ID or username if simple string
                 if (t.assignedTo && t.assignedTo.id === userId) {
                      // match
@@ -186,7 +185,7 @@ const ResourcePage = ({ shell }) => {
     const handleAddMember = async (userId) => {
         try {
             setAddingMember(true);
-            await librepm.projectMembersAdd(selectedProjectId, userId, 'MEMBER');
+            await librepm.projectMembersAdd(selectedProjectId, userId, 'EDITOR');
             toast.success(t("Success"));
             setAvailableMembers(prev => prev.filter(u => u.id !== userId));
             loadAllocations();

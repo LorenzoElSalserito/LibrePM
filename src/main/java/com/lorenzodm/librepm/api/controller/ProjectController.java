@@ -59,6 +59,12 @@ public class ProjectController {
         return ResponseEntity.ok(projectMapper.toResponse(projectService.update(userId, projectId, req)));
     }
 
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<Void> delete(@PathVariable String userId, @PathVariable String projectId) {
+        projectService.delete(userId, projectId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/{projectId}/archived")
     public ResponseEntity<ProjectResponse> setArchived(
             @PathVariable String userId,

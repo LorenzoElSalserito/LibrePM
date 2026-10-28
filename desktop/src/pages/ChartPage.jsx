@@ -153,7 +153,7 @@ const CharterInfoCard = ({ charter, onSave }) => {
 // ========================================
 // Risk Widget (enhanced with probability + mitigation)
 // ========================================
-const RiskWidget = ({ risks, onCreate, onDelete, onUpdate }) => {
+const RiskWidget = ({ risks, onCreate, onDelete }) => {
     const { t } = useTranslation();
     const [showForm, setShowForm] = useState(false);
     const [newDesc, setNewDesc] = useState('');
@@ -432,9 +432,8 @@ const OkrWidget = ({ okrs, projectId, onReload }) => {
                                     <div key={kr.id} className="d-flex align-items-center gap-2 py-1 border-top">
                                         <small className="flex-grow-1 text-muted">{kr.name}</small>
                                         <input type="number" className="form-control form-control-sm" style={{ width: '65px', fontSize: '0.7rem' }}
-                                            value={kr.currentValue || 0}
-                                            onBlur={e => handleUpdateKrValue(okr.id, kr.id, e.target.value)}
-                                            onChange={e => {/* controlled locally, save on blur */}} />
+                                            key={`${kr.id}:${kr.currentValue}`} defaultValue={kr.currentValue || 0}
+                                            onBlur={e => handleUpdateKrValue(okr.id, kr.id, e.target.value)} />
                                         <small className="text-muted">/ {kr.targetValue} {kr.unit}</small>
                                         <div className="progress" style={{ width: '60px', height: '4px' }}>
                                             <div className="progress-bar bg-success" style={{ width: `${Math.min(100, kr.achievementPercentage || 0)}%` }}></div>

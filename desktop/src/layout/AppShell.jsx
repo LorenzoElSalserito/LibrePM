@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback, lazy, Suspense } from "react";
 import { librepm } from "@api/librepm.js";
 import { toast } from "react-toastify";
 import { useTranslation } from 'react-i18next';
@@ -13,30 +13,32 @@ import NotificationBell from "../components/NotificationBell.jsx";
 import PortalModal from "../components/PortalModal.jsx";
 
 // Pages
-import MenuPage from "../pages/MenuPage.jsx";
-import CalendarPage from "../pages/CalendarPage.jsx";
-import PlannerPage from "../pages/PlannerPage.jsx";
-import KanbanPage from "../pages/KanbanPage.jsx";
-import NotesPage from "../pages/NotesPage.jsx";
-import SettingsPage from "../pages/SettingsPage.jsx";
-import Dashboard from "../pages/Dashboard.jsx";
-import AnalyticsPage from "../pages/AnalyticsPage.jsx";
-import TeamPage from "../pages/TeamPage.jsx";
-import ResourcePage from "../pages/ResourcePage.jsx";
-import ConnectionsPage from "../pages/ConnectionsPage.jsx";
-import GanttPage from "../pages/GanttPage.jsx";
-import ChartPage from "../pages/ChartPage.jsx";
-import TemplatesPage from "../pages/TemplatesPage.jsx";
-import IntegrationsPage from "../pages/IntegrationsPage.jsx";
-import GuidesPage from "../pages/GuidesPage.jsx";
-import InboxPage from "../pages/InboxPage.jsx";
-import TimeTrackingPage from "../pages/TimeTrackingPage.jsx";
-import ConflictReviewPage from "../pages/ConflictReviewPage.jsx";
-import FinancePage from "../pages/FinancePage.jsx";
-import GrantsPage from "../pages/GrantsPage.jsx";
-import StakeholderPage from "../pages/StakeholderPage.jsx";
-import ChangeControlPage from "../pages/ChangeControlPage.jsx";
-import PortfolioPage from "../pages/PortfolioPage.jsx";
+import PageErrorBoundary from "../components/PageErrorBoundary.jsx";
+const MessagesPage = lazy(() => import("../pages/MessagesPage.jsx"));
+const MenuPage = lazy(() => import("../pages/MenuPage.jsx"));
+const CalendarPage = lazy(() => import("../pages/CalendarPage.jsx"));
+const PlannerPage = lazy(() => import("../pages/PlannerPage.jsx"));
+const KanbanPage = lazy(() => import("../pages/KanbanPage.jsx"));
+const NotesPage = lazy(() => import("../pages/NotesPage.jsx"));
+const SettingsPage = lazy(() => import("../pages/SettingsPage.jsx"));
+const Dashboard = lazy(() => import("../pages/Dashboard.jsx"));
+const AnalyticsPage = lazy(() => import("../pages/AnalyticsPage.jsx"));
+const TeamPage = lazy(() => import("../pages/TeamPage.jsx"));
+const ResourcePage = lazy(() => import("../pages/ResourcePage.jsx"));
+const ConnectionsPage = lazy(() => import("../pages/ConnectionsPage.jsx"));
+const GanttPage = lazy(() => import("../pages/GanttPage.jsx"));
+const ChartPage = lazy(() => import("../pages/ChartPage.jsx"));
+const TemplatesPage = lazy(() => import("../pages/TemplatesPage.jsx"));
+const IntegrationsPage = lazy(() => import("../pages/IntegrationsPage.jsx"));
+const GuidesPage = lazy(() => import("../pages/GuidesPage.jsx"));
+const InboxPage = lazy(() => import("../pages/InboxPage.jsx"));
+const TimeTrackingPage = lazy(() => import("../pages/TimeTrackingPage.jsx"));
+const ConflictReviewPage = lazy(() => import("../pages/ConflictReviewPage.jsx"));
+const FinancePage = lazy(() => import("../pages/FinancePage.jsx"));
+const GrantsPage = lazy(() => import("../pages/GrantsPage.jsx"));
+const StakeholderPage = lazy(() => import("../pages/StakeholderPage.jsx"));
+const ChangeControlPage = lazy(() => import("../pages/ChangeControlPage.jsx"));
+const PortfolioPage = lazy(() => import("../pages/PortfolioPage.jsx"));
 
 const DONATION_URL = "https://www.paypal.com/paypalme/lorenzodemarco92";
 
@@ -94,7 +96,6 @@ function AboutLibrePMModal({ onClose, t }) {
 import { WorkflowProvider } from "../context/WorkflowContext.jsx";
 
 // Assets
-import LogoIcon from "../assets/Logo.svg";
 
 /**
  * AppShell - Main Layout Component for LibrePM.
@@ -125,7 +126,7 @@ export default function AppShell({ initialUser, onLogout }) {
     // State - Backend Data
     // ========================================
 
-    const [currentUser, setCurrentUser] = useState(initialUser);
+    const [currentUser] = useState(initialUser);
     const [currentProject, setCurrentProject] = useState(null);
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -138,6 +139,7 @@ export default function AppShell({ initialUser, onLogout }) {
 
     const PAGES = useMemo(() => [
         { id: "dashboard", label: t("Dashboard"), icon: "bi-speedometer2", component: Dashboard },
+        { id: "messages", label: t("Messages"), icon: "bi-chat-dots", component: MessagesPage },
         { id: "inbox", label: t("Inbox"), icon: "bi-inbox", component: InboxPage },
         { id: "charter", label: t("Charter"), icon: "bi-file-earmark-text", component: ChartPage },
         { id: "menu", label: t("Projects"), icon: "bi-folder2-open", component: MenuPage },
@@ -172,10 +174,8 @@ export default function AppShell({ initialUser, onLogout }) {
     // Filter pages based on workspace profile modules
     const filteredPages = useMemo(() => {
         if (loading) return []; // Return empty array while loading
-        const hasModuleConfig = Object.keys(workspaceModules).length > 0;
-        if (!hasModuleConfig) return PAGES;
-        return PAGES.filter(p => !p.module || workspaceModules[p.module] !== false);
-    }, [PAGES, workspaceModules, loading]);
+        return PAGES;
+    }, [PAGES, loading]);
 
     const activePage = useMemo(() => filteredPages.find((p) => p.id === activeId) ?? filteredPages[0], [filteredPages, activeId]);
 
@@ -236,22 +236,19 @@ export default function AppShell({ initialUser, onLogout }) {
             },
             {
                 id: "export",
-                label: t("Export Database"),
+                label: t("Export data (JSON)"),
                 icon: "bi-box-arrow-up",
                 onClick: async () => {
+                    // Same workspace JSON export as Integrations; works on SQLite and MariaDB.
+                    const pending = toast.loading(t("Export in progress..."));
                     try {
-                        if (librepm.isElectron()) {
-                            await librepm.exportJsonDialog();
-                        } else {
-                            const blob = await librepm.exportDatabase();
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `librepm-backup-${new Date().toISOString().split('T')[0]}.zip`;
-                            a.click();
-                            URL.revokeObjectURL(url);
-                        }
+                        const result = await librepm.transferExportJson();
+                        toast.dismiss(pending);
+                        if (result?.canceled) return;
+                        const s = result?.summary;
+                        toast.success(`${t("JSON export completed.")}${s ? ` ${t("{{projects}} projects, {{tasks}} tasks.", { projects: s.projects ?? 0, tasks: s.tasks ?? 0 })}` : ""}${result?.filePath ? ` ${t("Saved to {{path}}", { path: result.filePath })}` : ""}`);
                     } catch (e) {
+                        toast.dismiss(pending);
                         console.error('Export error:', e);
                         toast.error(t("Export error") + ': ' + e.message);
                     }
@@ -622,7 +619,7 @@ export default function AppShell({ initialUser, onLogout }) {
                             actions={
                                 <>
                                     {headerActions}
-                                    <NotificationBell />
+                                    <NotificationBell shell={shell} />
                                     {panelToggleBtn}
                                     <ProfileMenu
                                         initials={currentUser?.displayName?.substring(0, 2)?.toUpperCase() || "JL"}
@@ -638,7 +635,11 @@ export default function AppShell({ initialUser, onLogout }) {
                         <section className="jl-content">
                             {/* Page Content */}
                             <div className="jl-page" id="main-content">
-                                <PageComponent shell={shell} />
+                                <PageErrorBoundary key={activePage.id}>
+                                    <Suspense fallback={<div className="p-5 text-center" role="status"><span className="spinner-border text-primary" /><span className="visually-hidden">Caricamento pagina</span></div>}>
+                                        <PageComponent shell={shell} />
+                                    </Suspense>
+                                </PageErrorBoundary>
                             </div>
 
                             {/* Right Panel */}

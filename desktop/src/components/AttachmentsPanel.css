@@ -1,0 +1,130 @@
+/* Shared attachments panel — colors come from the --jl-* theme tokens (light and dark). */
+.lp-attachments {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--jl-text-primary);
+}
+
+.lp-attachments__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.lp-attachments__title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.lp-attachments__count {
+    background: var(--jl-primary-dark, #0288d1);
+    color: #fff;
+    font-weight: 600;
+}
+
+.lp-attachments__drop {
+    border: 1px dashed var(--jl-input-border);
+    border-radius: 12px;
+    background: var(--jl-bg-card);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.lp-attachments__drop.is-active {
+    border-color: var(--jl-primary-dark, #0288d1);
+    background: color-mix(in srgb, var(--jl-primary-dark, #0288d1) 8%, var(--jl-bg-card));
+}
+
+.lp-attachments__empty {
+    margin: 0;
+    padding: 18px 12px;
+    text-align: center;
+    color: var(--jl-text-secondary);
+}
+
+.lp-attachments__list {
+    list-style: none;
+    margin: 0;
+    padding: 4px;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.lp-attachments__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    transition: background-color 0.15s ease;
+}
+
+.lp-attachments__item + .lp-attachments__item {
+    border-top: 1px solid var(--jl-border-color);
+}
+
+.lp-attachments__item:hover,
+.lp-attachments__item:focus-within {
+    background: var(--jl-table-stripe);
+}
+
+.lp-attachments__icon {
+    font-size: 1.35rem;
+    color: var(--jl-primary-dark, #0288d1);
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .lp-attachments__icon,
+.jl-root.dark-theme .lp-attachments__icon {
+    color: var(--jl-primary, #4fc3f7);
+}
+
+.lp-attachments__meta {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+
+.lp-attachments__name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lp-attachments__details,
+.lp-attachments__hint {
+    color: var(--jl-text-secondary);
+}
+
+.lp-attachments__actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.lp-attachments__spin {
+    display: inline-block;
+    animation: lp-attachments-spin 0.8s linear infinite;
+}
+
+@keyframes lp-attachments-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lp-attachments__drop,
+    .lp-attachments__item {
+        transition: none;
+    }
+    .lp-attachments__spin {
+        animation: none;
+    }
+}

@@ -12,6 +12,7 @@ const fs = require("fs");
 const http = require("http");
 const os = require("os");
 const { spawn } = require("child_process");
+const { createDataTransfer } = require("./data-transfer.cjs");
 
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
@@ -63,11 +64,11 @@ function hardFocus(win, reason = 'unknown', force = false) {
         }
 
         if (process.platform === 'darwin') {
-            try { app.focus({ steal: true }); } catch {}
+            try { app.focus({ steal: true }); } catch { /* Platform may reject a window focus request. */ }
         }
 
         win.setFocusable(true);
-        try { win.moveTop(); } catch {}
+        try { win.moveTop(); } catch { /* Platform may reject a window focus request. */ }
         win.focus();
 
         console.log(`[Main] hardFocus #${focusId} EXECUTED reason: ${reason}`);
@@ -81,7 +82,7 @@ function hardFocus(win, reason = 'unknown', force = false) {
             const wasAOT = win.isAlwaysOnTop();
             win.setAlwaysOnTop(true, 'screen-saver');
             win.show();
-            try { win.moveTop(); } catch {}
+            try { win.moveTop(); } catch { /* Platform may reject a window focus request. */ }
             win.focus();
 
             setTimeout(() => {
@@ -109,17 +110,6 @@ function throttledHardFocus(win, reason, force = false) {
 // ----------------------------
 // Utility Functions
 // ----------------------------
-
-function pad2(n) {
-    return String(n).padStart(2, "0");
-}
-
-function nowStamp() {
-    const d = new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}_${pad2(
-        d.getHours()
-    )}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
-}
 
 function trimLogBuffer(buffer) {
     while (buffer.length > LOG_BUFFER_LIMIT) {
@@ -654,11 +644,11 @@ function createWindow() {
     // Notify renderer + hook for focus recovery
     mainWindow.on('focus', () => {
         console.log('[Main] window FOCUS');
-        try { mainWindow.webContents.send('app:focus'); } catch {}
+        try { mainWindow.webContents.send('app:focus'); } catch { /* Platform may reject a window focus request. */ }
     });
     mainWindow.on('blur', () => {
         console.log('[Main] window BLUR');
-        try { mainWindow.webContents.send('app:blur'); } catch {}
+        try { mainWindow.webContents.send('app:blur'); } catch { /* Platform may reject a window focus request. */ }
     });
 
     mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
@@ -988,176 +978,61 @@ ipcMain.handle("focus:history", async (_, taskId) => callBackend("GET", `/focus/
 ipcMain.handle("focus:historyAll", async () => callBackend("GET", "/focus"));
 
 // ----------------------------
-// IPC - Export/Import Data
+// IPC - Export/Import Data (see data-transfer.cjs)
 // ----------------------------
 
-ipcMain.handle("data:exportJsonDialog", async () => {
-    const defaultPath = path.join(
-        app.getPath("documents"),
-        `LibrePM-export-${nowStamp()}.json`
-    );
-
-    const res = await dialog.showSaveDialog({
-        title: "LibrePM - Esporta dati (JSON)",
-        defaultPath,
-        buttonLabel: "Esporta",
-        filters: [{ name: "JSON", extensions: ["json"] }],
-    });
-
-    if (res.canceled || !res.filePath) {
-        return { ok: false, canceled: true };
-    }
-
-    try {
-        const projects = await callBackend("GET", "/projects");
-        const exportData = {
-            version: "0.1.1",
-            exportedAt: new Date().toISOString(),
-            projects: projects || [],
+/**
+ * Stops the backend and waits for the process to exit, so the SQLite file is released.
+ * Falls back to a hard kill after the timeout.
+ */
+function stopBackendAndWait(timeoutMs = 20000) {
+    const child = backendProcess;
+    if (!child) return Promise.resolve();
+    return new Promise((resolve) => {
+        let done = false;
+        const finish = () => {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            resolve();
         };
-
-        fs.writeFileSync(res.filePath, JSON.stringify(exportData, null, 2), "utf-8");
-        return { ok: true, filePath: res.filePath };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    }
-});
-
-ipcMain.handle("data:importJsonDialog", async () => {
-    const res = await dialog.showOpenDialog({
-        title: "LibrePM - Importa dati (JSON)",
-        buttonLabel: "Importa",
-        filters: [{ name: "JSON", extensions: ["json"] }],
-        properties: ["openFile"],
+        const timer = setTimeout(() => {
+            console.warn("[Main] Backend did not stop in time, forcing kill");
+            try { child.kill("SIGKILL"); } catch { /* already gone */ }
+            setTimeout(finish, 1000);
+        }, timeoutMs);
+        child.once("close", finish);
+        if (child.exitCode !== null || child.signalCode !== null) finish();
+        console.log("[Main] Stopping backend for database import...");
+        try { child.kill(); } catch { finish(); }
     });
+}
 
-    if (res.canceled || !res.filePaths || res.filePaths.length === 0) {
-        return { ok: false, canceled: true };
+/**
+ * Applies a staged database import: restart the backend (it backs up the current DB and swaps in
+ * the staged one at startup). In dev mode the backend runs externally and must be restarted by hand.
+ */
+async function restartBackendForImport() {
+    if (isDev) {
+        console.warn("[Main] Dev mode: restart the external backend to apply the staged import");
+        return { restarted: false };
     }
-
-    const importPath = res.filePaths[0];
-
-    try {
-        const raw = fs.readFileSync(importPath, "utf-8");
-        const data = JSON.parse(raw);
-        return { ok: true, importPath, data };
-    } catch (e) {
-        return { ok: false, error: e.message };
+    await stopBackendAndWait();
+    await startBackend();
+    const ready = await waitForBackendReady(backendPort, 180, 1000);
+    if (!ready) {
+        throw new Error("The backend did not come back after the import. Restart LibrePM.");
     }
-});
+    return { restarted: true };
+}
 
-ipcMain.handle("data:exportCsvDialog", async (_evt, projectId) => {
-    if (!projectId) {
-        return { ok: false, error: "Nessun progetto selezionato" };
-    }
-
-    const defaultPath = path.join(
-        app.getPath("documents"),
-        `LibrePM-project-${nowStamp()}.csv`
-    );
-
-    const res = await dialog.showSaveDialog({
-        title: "LibrePM - Esporta task progetto (CSV)",
-        defaultPath,
-        buttonLabel: "Esporta",
-        filters: [{ name: "CSV", extensions: ["csv"] }],
-    });
-
-    if (res.canceled || !res.filePath) {
-        return { ok: false, canceled: true };
-    }
-
-    try {
-        const tasks = await callBackend("GET", `/projects/${projectId}/tasks`);
-        const header = "id,title,status,priority,deadline,owner,createdAt,updatedAt";
-        const rows = (tasks || []).map((t) =>
-            [
-                t.id,
-                `"${(t.title || "").replace(/"/g, '""')}"`,
-                t.status,
-                t.priority,
-                t.deadline || "",
-                t.owner || "",
-                t.createdAt,
-                t.updatedAt,
-            ].join(",")
-        );
-        const csv = [header, ...rows].join("\n");
-
-        fs.writeFileSync(res.filePath, csv, "utf-8");
-        return { ok: true, filePath: res.filePath };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    }
-});
-
-ipcMain.handle("data:exportDbDialog", async () => {
-    const defaultPath = path.join(
-        app.getPath("documents"),
-        `LibrePM-db-${nowStamp()}.db`
-    );
-
-    const res = await dialog.showSaveDialog({
-        title: "LibrePM - Esporta Database",
-        defaultPath,
-        buttonLabel: "Esporta",
-        filters: [{ name: "SQLite Database", extensions: ["db"] }],
-    });
-
-    if (res.canceled || !res.filePath) {
-        return { ok: false, canceled: true };
-    }
-
-    try {
-        // Find the database file in the new location
-        const dbPath = path.join(getLibrePMHome(), "librepm.db");
-
-        if (!fs.existsSync(dbPath)) {
-            return { ok: false, error: "Database non trovato in " + dbPath };
-        }
-
-        fs.copyFileSync(dbPath, res.filePath);
-        return { ok: true, filePath: res.filePath };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    }
-});
-
-ipcMain.handle("data:importDbDialog", async () => {
-    const res = await dialog.showOpenDialog({
-        title: "LibrePM - Importa Database",
-        buttonLabel: "Importa",
-        filters: [{ name: "SQLite Database", extensions: ["db"] }],
-        properties: ["openFile"],
-    });
-
-    if (res.canceled || !res.filePaths || res.filePaths.length === 0) {
-        return { ok: false, canceled: true };
-    }
-
-    const importPath = res.filePaths[0];
-
-    try {
-        const destDb = path.join(getLibrePMHome(), "librepm.db");
-
-        // Backup the existing database
-        if (fs.existsSync(destDb)) {
-            const backupPath = destDb.replace(".db", `.backup-${nowStamp()}.db`);
-            fs.copyFileSync(destDb, backupPath);
-        }
-
-        // Copy the new database
-        fs.copyFileSync(importPath, destDb);
-
-        return {
-            ok: true,
-            importPath,
-            destPath: destDb,
-            message: "Database importato. Riavvia l'applicazione per applicare le modifiche."
-        };
-    } catch (e) {
-        return { ok: false, error: e.message };
-    }
-});
+createDataTransfer({
+    dialog,
+    app,
+    getBackendPort: () => backendPort,
+    getWindow: () => mainWindow,
+    getDataDir: () => getLibrePMHome(),
+    restartBackend: restartBackendForImport,
+}).register(ipcMain);
 
 console.log("[Main] IPC handlers registered");

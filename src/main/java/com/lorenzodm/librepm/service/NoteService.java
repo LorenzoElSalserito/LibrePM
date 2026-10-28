@@ -27,7 +27,7 @@ public interface NoteService {
     List<com.lorenzodm.librepm.core.entity.NoteRevision> getRevisions(String userId, String noteId);
 
     // Backlinks (PRD-02-FR-005)
-    List<Note> getBacklinks(String entityType, String entityId);
+    List<Note> getBacklinks(String userId, String entityType, String entityId);
 
     // Deprecati (da rimuovere dopo refactoring completo)
     Note create(String userId, String parentType, String parentId, CreateNoteRequest request);

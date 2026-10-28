@@ -60,6 +60,16 @@ public class PendingDbImportRunListener implements SpringApplicationRunListener 
                 log.info("ℹ️ Nessun DB precedente trovato, import iniziale.");
             }
 
+            // The previous database may have left WAL/SHM side files (e.g. after a hard kill on
+            // Windows). They belong to the OLD database: keep them with the backup and remove them,
+            // otherwise SQLite would replay foreign WAL frames onto the imported file.
+            for (String suffix : new String[]{"-wal", "-shm", "-journal"}) {
+                Path side = Paths.get(db + suffix);
+                if (Files.exists(side)) {
+                    Files.move(side, Paths.get(backup + suffix), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+
             safeMove(pending, db);
 
             Files.deleteIfExists(marker);

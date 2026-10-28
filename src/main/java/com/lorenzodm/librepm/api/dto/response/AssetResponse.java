@@ -17,5 +17,8 @@ public record AssetResponse(
         Instant lastSyncedAt,
         String syncStatus,
         String cloudUrl,
-        String ownerId
+        String ownerId,
+        String ownerName,
+        String projectId,
+        String taskId
 ) {}

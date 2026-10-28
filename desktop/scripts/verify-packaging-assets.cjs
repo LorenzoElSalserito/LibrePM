@@ -20,7 +20,7 @@ const required = [
 ];
 for (const file of required) if (!fs.existsSync(path.join(meta.paths.desktopDir, file))) problems.push(`file mancante: ${file}`);
 if (lock.version !== pkg.version || lock.packages?.[""]?.version !== pkg.version) problems.push("package-lock.json non allineato");
-if (!new RegExp(`^version\\s*=\\s*['\"]${pkg.version.replace(/\./g, "\\.")}['\"]\\s*$`, "m").test(gradle)) problems.push("build.gradle non allineato");
+if (!new RegExp(`^version\\s*=\\s*['"]${pkg.version.replace(/\./g, "\\.")}['"]\\s*$`, "m").test(gradle)) problems.push("build.gradle non allineato");
 if (pkg.name !== "librepm") problems.push(`name deve essere librepm, trovato ${pkg.name}`);
 if (pkg.build?.executableName !== "librepm") problems.push("build.executableName deve essere librepm");
 if (pkg.build?.artifactName !== "librepm_v${version}.${ext}") problems.push("build.artifactName non usa macro versione prevista");

@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-16",
+  "scope": "local revision; partial product coverage",
+  "backend_suites": [
+    {
+      "name": "com.lorenzodm.librepm.LibrePMApplicationTests",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:18"
+    },
+    {
+      "name": "com.lorenzodm.librepm.api.AuthenticatedIdentityE2ETest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:22"
+    },
+    {
+      "name": "com.lorenzodm.librepm.api.DeletionE2ETest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:25"
+    },
+    {
+      "name": "com.lorenzodm.librepm.api.ProjectMemberE2ETest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:25"
+    },
+    {
+      "name": "com.lorenzodm.librepm.api.ProjectMessageE2ETest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:26"
+    },
+    {
+      "name": "com.lorenzodm.librepm.migration.SqliteToMariaDbMigratorE2ETest",
+      "tests": "1",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:27"
+    },
+    {
+      "name": "com.lorenzodm.librepm.service.impl.BcryptPasswordServiceTest",
+      "tests": "13",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:38"
+    },
+    {
+      "name": "com.lorenzodm.librepm.service.impl.UserServiceImplTest",
+      "tests": "4",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "timestamp": "2026-10-16T19:37:40"
+    }
+  ],
+  "browser_stats": {
+    "startTime": "2026-10-16T19:41:45.901Z",
+    "duration": 27351.413,
+    "expected": 9,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  },
+  "browser_tests": [
+    {
+      "file": "electron.spec.js",
+      "tests": [
+        "installed renderer loads local assets and Gantt over file protocol with real preload"
+      ]
+    },
+    {
+      "file": "product.spec.js",
+      "tests": [
+        "all pages remain reachable on personal profile without renderer crashes",
+        "built Gantt renders task and survives view changes and revisit",
+        "messages travel from UI to backend and survive reload without interpreting HTML",
+        "task create through planner UI, backend update and delete stay coherent",
+        "compact viewport and both themes retain visible navigation and message controls",
+        "Gantt treats task labels as text instead of SVG markup",
+        "diagnostics downloads a ZIP through settings and report endpoint returns PDF",
+        "OKR key result accepts editing and persists value on blur"
+      ]
+    }
+  ],
+  "packaging_tests": {
+    "passed": 6,
+    "skipped": 1,
+    "failed": 0
+  },
+  "packaging_assets": "passed with system fpm 1.18.0",
+  "lint": {
+    "errors": 0,
+    "warnings": 31,
+    "passed": false
+  },
+  "jar_sha256": "ff2afe9f059e744d20df33b820bc3acb334e2031ae664c5075c90b0f764239e8"
+}
